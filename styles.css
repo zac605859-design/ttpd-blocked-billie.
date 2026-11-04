@@ -127,3 +127,6 @@
 .event-countdown-clock strong { color: #d8c58a; }
 .event-countdown-clock span { color: #c7c0b3; }
 .event-ended { color: #d8c58a; }
+.event-countdown-section .eyebrow {
+  color: #d8c58a;
+}
