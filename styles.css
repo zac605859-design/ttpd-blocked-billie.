@@ -134,3 +134,19 @@
 #vote {
   background-color: #70786B;
 }
+/* Voting page text colours */
+#vote .section-heading .eyebrow {
+  color: #d8c58a !important;
+}
+
+#vote .section-aside {
+  color: #211d1d !important;
+}
+
+#vote .section-intro {
+  color: #ffffff !important;
+}
+
+#vote .fine-print {
+  color: #211d1d !important;
+}
