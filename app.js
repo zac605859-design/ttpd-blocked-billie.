@@ -44,7 +44,7 @@ async function loadWinners() {
   $("winnerEvents").innerHTML = editions.map(e=>`<article class="event-card"><div class="eyebrow">${e.year}</div><h3>${escapeHtml(e.title)}</h3><ul>${(winners||[]).filter(w=>w.edition_id===e.id).map(w=>`<li><strong>${escapeHtml(w.category_name)}</strong><br>${escapeHtml(w.nominee_name)}</li>`).join("")}</ul></article>`).join("");
 }
 async function loadMembers() {
-  const {data,error}=await db.from("members").select("id,display_name,handle,bio,avatar_url").eq("visible",true).order("display_name");
+  const {data,error}=await db.from("members").select("id,display_name,handle,bio,avatar_url").eq("visible",true).order("created_at", { ascending: true });
   if(error){$("memberGrid").innerHTML='<p class="muted">Could not load member profiles.</p>';return;}
   $("memberGrid").innerHTML=data?.length?data.map(m=>`<article class="member-card"><div class="member-top">${m.avatar_url?`<img class="avatar" src="${safeUrl(m.avatar_url)}" alt="">`:`<div class="avatar">${escapeHtml((m.display_name||"?").slice(0,1).toUpperCase())}</div>`}<div><h3>${escapeHtml(m.display_name)}</h3><div class="handle">${escapeHtml(m.handle||"")}</div></div></div><p>${escapeHtml(m.bio||"")}</p></article>`).join(""):'<p class="muted">Member profiles will appear here.</p>';
 }
