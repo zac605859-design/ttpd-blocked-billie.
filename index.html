@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="TTPD BLOCKED BILLIE — community awards, members, winners and announcements.">
+  <title>TTPD BLOCKED BILLIE</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="#home" aria-label="TTPD BLOCKED BILLIE home">
+      <span class="brand-mark">TB</span>
+      <span>TTPD BLOCKED BILLIE</span>
+    </a>
+    <button class="menu-toggle" id="menuToggle" aria-label="Toggle navigation">☰</button>
+    <nav id="mainNav">
+      <a href="#vote">Vote</a><a href="#winners">Winners</a><a href="#members">Members</a><a href="#newsletter">Newsletter</a>
+      <a class="admin-link" href="#admin">Admin</a>
+    </nav>
+  </header>
+
+  <main id="home">
+    <section class="hero">
+      <div class="eyebrow">THE COMMUNITY HUB</div>
+      <h1>Welcome to<br><em>TTPD BLOCKED BILLIE.</em></h1>
+      <p>One place for the awards, the people, the winners and everything happening in the group.</p>
+      <div class="hero-actions"><a class="button primary" href="#vote">Go to voting</a><a class="button secondary" href="#winners">Previous winners</a></div>
+      <div class="hero-note">A community-made space. Updated by the admins.</div>
+    </section>
+
+    <section class="section" id="vote">
+      <div class="section-heading"><div><div class="eyebrow">01 / HAVE YOUR SAY</div><h2>Community voting</h2></div><span class="section-aside" id="votingStatus">Loading status…</span></div>
+      <p class="section-intro">Choose one nominee in each category. Submit your ballot once from this browser.</p>
+      <div id="votingClosed" class="notice hidden">Voting is currently closed. Check the winners section for published results.</div>
+      <form id="ballotForm"><div id="categories" class="category-grid"><p class="muted">Loading categories…</p></div><button class="button primary" type="submit" id="submitBallot">Submit ballot</button><p id="voteMessage" class="form-message" role="status"></p></form>
+      <p class="fine-print">Voting is limited to one ballot per browser ID. This is a lightweight community safeguard, not identity verification; clearing browser data or using another device can bypass it.</p>
+    </section>
+
+    <section class="section dark-section" id="winners">
+      <div class="section-heading"><div><div class="eyebrow">02 / THE RECORD</div><h2>Results & previous winners</h2></div><span class="section-aside">Published by admins</span></div>
+      <p class="section-intro">Browse the winners and results from past award editions.</p>
+      <div id="winnerEvents" class="event-grid"><p class="muted">Loading published editions…</p></div>
+    </section>
+
+    <section class="section" id="members">
+      <div class="section-heading"><div><div class="eyebrow">03 / THE PEOPLE</div><h2>Meet the members</h2></div><span class="section-aside">Admin-managed directory</span></div>
+      <p class="section-intro">A directory of community members, curated and maintained by the admin team.</p>
+      <div id="memberGrid" class="member-grid"><p class="muted">Loading member profiles…</p></div>
+    </section>
+
+    <section class="section newsletter-section" id="newsletter">
+      <div><div class="eyebrow">04 / THE BULLETIN</div><h2>Community newsletter</h2><p class="section-intro">Announcements, event updates and important community notes — all published here.</p></div>
+      <div id="announcements" class="announcement-list"><p class="muted">Loading announcements…</p></div>
+    </section>
+
+    <section class="section admin-section" id="admin">
+      <div class="section-heading"><div><div class="eyebrow">PRIVATE AREA</div><h2>Admin dashboard</h2></div><span class="section-aside">Admin access only</span></div>
+      <div id="adminLogin" class="admin-panel">
+        <p>Sign in with the admin account configured in Supabase.</p>
+        <form id="loginForm" class="login-form"><input id="adminEmail" type="email" placeholder="Admin email" required><input id="adminPassword" type="password" placeholder="Password" required><button class="button primary" type="submit">Sign in</button></form>
+        <p id="loginMessage" class="form-message" role="status"></p>
+      </div>
+      <div id="adminPanel" class="admin-panel hidden">
+        <div class="admin-top"><p>You are signed in as an administrator.</p><button class="button secondary small" id="signOut">Sign out</button></div>
+        <div class="admin-grid">
+          <div class="admin-card"><h3>Voting controls</h3><label class="switch-line"><input type="checkbox" id="votingToggle"> Voting is open</label><button class="button secondary small" id="refreshData">Refresh public site</button></div>
+          <div class="admin-card"><h3>Add a category</h3><form id="categoryForm"><input id="newCategory" placeholder="Category name" required><button class="button secondary small">Add category</button></form></div>
+          <div class="admin-card"><h3>Add a nominee</h3><form id="nomineeForm"><select id="nomineeCategory" required></select><input id="newNominee" placeholder="Nominee name / @handle" required><button class="button secondary small">Add nominee</button></form></div>
+          <div class="admin-card"><h3>Member profiles</h3><form id="memberForm"><input id="memberName" placeholder="Display name" required><input id="memberHandle" placeholder="@handle"><input id="memberBio" placeholder="Short bio"><input id="memberAvatar" placeholder="Avatar image URL (optional)"><button class="button secondary small">Add member</button></form></div>
+          <div class="admin-card"><h3>Publish an announcement</h3><form id="announcementForm"><input id="announcementTitle" placeholder="Announcement title" required><textarea id="announcementBody" placeholder="Write the announcement…" required></textarea><button class="button secondary small">Publish</button></form></div>
+          <div class="admin-card"><h3>Publish award edition</h3><form id="editionForm"><input id="editionTitle" placeholder="Edition title (e.g. 2026 Awards)" required><input id="editionYear" type="number" min="2000" max="2100" placeholder="Year" required><button class="button secondary small">Create edition</button></form><p class="fine-print">After creating an edition, use the SQL admin workflow in README to attach category winners and publish it. This avoids exposing unpublished results.</p></div>
+        </div>
+        <p id="adminMessage" class="form-message" role="status"></p>
+      </div>
+    </section>
+  </main>
+
+  <footer><span>TTPD BLOCKED BILLIE</span><span>Community-built · Admin maintained</span></footer>
+  <script src="app.js"></script>
+</body>
+</html>
