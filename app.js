@@ -85,7 +85,7 @@ async function loadAnnouncements() {
   const pinned = (data || []).filter(a => a.is_pinned);
   const ticker = $("pinnedNewsTicker");
   if (pinned.length) {
-    ticker.innerHTML = `<div class="pinned-news-label">PINNED</div><div class="pinned-news-track">${[...pinned,...pinned].map(a=>`<span>${escapeHtml(a.title)}</span>`).join("")}</div>`;
+    ticker.innerHTML = `<div class="pinned-news-track">${[...pinned,...pinned].map(a=>`<span>${escapeHtml(a.title)}</span>`).join("")}</div>`;
     ticker.classList.remove("hidden");
   } else {
     ticker.innerHTML = "";
