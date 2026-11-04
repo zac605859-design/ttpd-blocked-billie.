@@ -18,3 +18,6 @@
 .admin-member-edit textarea{min-height:72px;resize:vertical}
 .admin-member-edit-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
 @media(max-width:760px){.admin-member-row{align-items:flex-start;flex-direction:column}.admin-member-actions{width:100%}.admin-member-actions .button{flex:1}}
+.hero::after {
+  pointer-events: none;
+}
