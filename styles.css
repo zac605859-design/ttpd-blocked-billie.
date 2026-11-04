@@ -18,6 +18,36 @@
 .admin-member-edit textarea{min-height:72px;resize:vertical}
 .admin-member-edit-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
 @media(max-width:760px){.admin-member-row{align-items:flex-start;flex-direction:column}.admin-member-actions{width:100%}.admin-member-actions .button{flex:1}}
-.hero::after {
-  pointer-events: none;
-}
+
+
+/* Homepage pinned-news ticker and member pagination */
+.pinned-news-ticker{display:flex;align-items:center;gap:18px;overflow:hidden;padding:12px 6vw;background:#211f24;color:#fff;border-bottom:1px solid rgba(255,255,255,.12)}
+.pinned-news-label{flex:0 0 auto;font:700 10px 'DM Mono',monospace;letter-spacing:.16em;color:#f0c8a4}
+.pinned-news-track{display:flex;align-items:center;gap:56px;white-space:nowrap;min-width:max-content;animation:pinned-news-scroll 28s linear infinite}
+.pinned-news-track span{font:500 12px 'DM Sans',sans-serif;letter-spacing:.04em}
+.pinned-news-track span:before{content:"✦";color:#f0c8a4;margin-right:14px}
+.pinned-news-ticker:hover .pinned-news-track{animation-play-state:paused}
+@keyframes pinned-news-scroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.pinned-tag{display:inline-block;margin-right:8px;padding:3px 6px;background:#eee4d9;color:#5b4033;font:700 9px 'DM Mono',monospace;letter-spacing:.1em}
+.member-load-more-wrap{display:flex;justify-content:center;margin-top:28px}
+.member-load-more-wrap .button{min-width:150px}
+@media(prefers-reduced-motion:reduce){.pinned-news-track{animation:none;white-space:normal;flex-wrap:wrap}.pinned-news-ticker{align-items:flex-start}}
+
+/* Compact season selector and winner results */
+.winner-season-options{display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:10px;margin:25px 0 18px}
+.winner-season-button{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:54px;padding:12px 15px;border:1px solid #55464a;background:#2b2529;color:var(--cream);text-align:left;cursor:pointer;font:600 13px 'DM Sans'}
+.winner-season-button small{font:10px 'DM Mono';color:#c9aeb4}
+.winner-season-button.active{border-color:var(--pink);background:#49343c}
+.winner-season-heading{margin:24px 0 14px}
+.winner-season-heading h3{font:600 26px 'Playfair Display';margin:7px 0}
+.winner-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.winner-row{display:flex;align-items:center;justify-content:space-between;gap:15px;padding:13px 15px;border:1px solid #55464a;background:#2b2529;font-size:12px}
+.winner-row strong{color:#e9b9c2}.winner-row span{text-align:right;color:#eee4df}
+/* Gallery */
+.gallery-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.gallery-item{margin:0;background:#fffaf5;border:1px solid var(--line);overflow:hidden}
+.gallery-item img{display:block;width:100%;aspect-ratio:1/1;object-fit:cover}
+.gallery-item figcaption{min-height:34px;padding:9px 11px;color:var(--muted);font-size:11px}
+/* Five homepage action links */
+.hero-actions{flex-wrap:wrap;max-width:760px}
+@media(max-width:760px){.gallery-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.winner-list{grid-template-columns:1fr}.winner-row{align-items:flex-start;flex-direction:column;gap:5px}.winner-row span{text-align:left}}
