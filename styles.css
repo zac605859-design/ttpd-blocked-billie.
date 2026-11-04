@@ -97,3 +97,13 @@
   display: inline-block;
   margin-top: 10px;
 }
+.hero-actions .button {
+  background-color: #302820;
+  border-color: #302820;
+  color: var(--cream);
+}
+
+.hero-actions .button:hover {
+  background-color: #211d1d;
+  border-color: #211d1d;
+}
