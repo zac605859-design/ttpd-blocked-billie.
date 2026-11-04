@@ -3,7 +3,7 @@
 *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--paper);color:var(--ink);font-family:'DM Sans',sans-serif}a{color:inherit;text-decoration:none}.site-header{height:76px;padding:0 6vw;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line);background:rgba(244,240,233,.94);position:sticky;top:0;z-index:10;backdrop-filter:blur(12px)}.brand{display:flex;align-items:center;gap:12px;font-size:12px;font-weight:700;letter-spacing:.13em}.brand-mark{width:34px;height:34px;display:grid;place-items:center;background:var(--red);color:white;font-family:'Playfair Display';font-size:15px;border-radius:50%}nav{display:flex;gap:28px;font-size:12px;font-weight:600}nav a:hover{color:var(--red)}.admin-link{color:var(--red)}.menu-toggle{display:none;background:none;border:0;font-size:23px}.hero{
   padding:115px 10vw 100px;
   min-height:570px;
-  background:#605a50;
+  background:#211d20;
   color:var(--cream);
   position:relative;
   overflow:hidden;
