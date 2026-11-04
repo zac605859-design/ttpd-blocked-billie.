@@ -15,12 +15,12 @@ function message(id, text, error=false) {
   const el = $(id); if (el) { el.textContent = text; el.style.color = error ? "#a12d43" : "#42664c"; }
 }
 function unavailable() {
-  ["categories","winnerEvents","memberGrid","announcements"].forEach(id => { if ($(id)) $(id).innerHTML = '<p class="muted">Connect Supabase to load this section. See README.md.</p>'; });
+  ["categories","winnerSeasonOptions","memberGrid","announcements","galleryGrid"].forEach(id => { if ($(id)) $(id).innerHTML = '<p class="muted">Connect Supabase to load this section. See README.md.</p>'; });
   $("votingStatus").textContent = "Setup required";
 }
 async function loadPublic() {
   if (!db) return unavailable();
-  await Promise.all([loadVoting(), loadWinners(), loadMembers(), loadAnnouncements()]);
+  await Promise.all([loadVoting(), loadWinners(), loadMembers(), loadAnnouncements(), loadGallery()]);
 }
 async function loadVoting() {
   const {data: setting} = await db.from("site_settings").select("value").eq("key","voting_open").maybeSingle();
@@ -35,26 +35,57 @@ async function loadVoting() {
   $("nomineeCategory").innerHTML = categoryCache.map(c=>`<option value="${c.id}">${escapeHtml(c.name)}</option>`).join("");
 }
 async function loadWinners() {
-  const {data: editions, error} = await db.from("award_editions").select("id,title,year").eq("published",true).order("year",{ascending:false});
-  if (error) { $("winnerEvents").innerHTML = '<p class="muted">Could not load published editions.</p>'; return; }
-  if (!editions?.length) { $("winnerEvents").innerHTML = '<p class="muted">No editions have been published yet.</p>'; return; }
+  const {data: editions, error} = await db.from("award_editions").select("id,title,year").eq("published",true).order("year",{ascending:true}).order("created_at",{ascending:true});
+  const options = $("winnerSeasonOptions");
+  const results = $("winnerSeasonResults");
+  if (error) { options.innerHTML = '<p class="muted">Could not load published seasons.</p>'; return; }
+  if (!editions?.length) { options.innerHTML = '<p class="muted">No seasons have been published yet.</p>'; results.innerHTML = ''; return; }
   const ids = editions.map(e=>e.id);
   const {data: winners, error: winnerError} = await db.from("winner_entries").select("edition_id,category_name,nominee_name").in("edition_id",ids);
-  if (winnerError) { $("winnerEvents").innerHTML = '<p class="muted">Could not load winner records.</p>'; return; }
-  $("winnerEvents").innerHTML = editions.map(e=>`<article class="event-card"><div class="eyebrow">${e.year}</div><h3>${escapeHtml(e.title)}</h3><ul>${(winners||[]).filter(w=>w.edition_id===e.id).map(w=>`<li><strong>${escapeHtml(w.category_name)}</strong><br>${escapeHtml(w.nominee_name)}</li>`).join("")}</ul></article>`).join("");
+  if (winnerError) { options.innerHTML = '<p class="muted">Could not load winner records.</p>'; return; }
+  options.innerHTML = editions.map((e,i)=>`<button type="button" class="winner-season-button${i===0?' active':''}" data-edition-id="${e.id}"><span>${escapeHtml(e.title)}</span><small>${e.year}</small></button>`).join("");
+  const showSeason = id => {
+    const edition = editions.find(e=>e.id===id);
+    const rows = (winners||[]).filter(w=>w.edition_id===id);
+    results.innerHTML = `<div class="winner-season-heading"><div class="eyebrow">${edition.year}</div><h3>${escapeHtml(edition.title)}</h3></div>` + (rows.length ? `<div class="winner-list">${rows.map(w=>`<article class="winner-row"><strong>${escapeHtml(w.category_name)}</strong><span>${escapeHtml(w.nominee_name)}</span></article>`).join("")}</div>` : '<p class="muted">No winners have been added to this season yet.</p>');
+    options.querySelectorAll(".winner-season-button").forEach(b=>b.classList.toggle("active",b.dataset.editionId===id));
+  };
+  options.onclick = e => { const button=e.target.closest("button[data-edition-id]"); if(button) showSeason(button.dataset.editionId); };
+  showSeason(editions[0].id);
 }
+
+let allPublicMembers = [];
+let visibleMemberCount = 5;
+const MEMBER_PAGE_SIZE = 5;
+
+function renderMembers() {
+  const grid = $("memberGrid");
+  const shown = allPublicMembers.slice(0, visibleMemberCount);
+  grid.innerHTML = shown.length ? shown.map(m=>`<article class="member-card"><div class="member-top">${m.avatar_url?`<img class="avatar" src="${safeUrl(m.avatar_url)}" alt="">`:`<div class="avatar">${escapeHtml((m.display_name||"?").slice(0,1).toUpperCase())}</div>`}<div><h3>${escapeHtml(m.display_name)}</h3><div class="handle">${escapeHtml(m.handle||"")}</div></div></div><p>${escapeHtml(m.bio||"")}</p></article>`).join("") : '<p class="muted">Member profiles will appear here.</p>';
+  const button = $("loadMoreMembers");
+  if (button) {
+    button.classList.toggle("hidden", visibleMemberCount >= allPublicMembers.length);
+    button.textContent = `Show more (${Math.min(MEMBER_PAGE_SIZE, allPublicMembers.length-visibleMemberCount)} more)`;
+  }
+}
+
 async function loadMembers() {
-  const {data,error}=await db.from("members").select("id,display_name,handle,bio,avatar_url").eq("visible",true).order("created_at", { ascending: true });
+  const {data,error}=await db.from("members")
+    .select("id,display_name,handle,bio,avatar_url,created_at")
+    .eq("visible",true)
+    .order("created_at", {ascending:true});
   if(error){$("memberGrid").innerHTML='<p class="muted">Could not load member profiles.</p>';return;}
-  $("memberGrid").innerHTML=data?.length?data.map(m=>`<article class="member-card"><div class="member-top">${m.avatar_url?`<img class="avatar" src="${safeUrl(m.avatar_url)}" alt="">`:`<div class="avatar">${escapeHtml((m.display_name||"?").slice(0,1).toUpperCase())}</div>`}<div><h3>${escapeHtml(m.display_name)}</h3><div class="handle">${escapeHtml(m.handle||"")}</div></div></div><p>${escapeHtml(m.bio||"")}</p></article>`).join(""):'<p class="muted">Member profiles will appear here.</p>';
+  allPublicMembers = data || [];
+  visibleMemberCount = MEMBER_PAGE_SIZE;
+  renderMembers();
 }
 
 async function loadAdminMembers() {
   const container = $("memberManagementList");
   if (!container || !db) return;
   const {data, error} = await db.from("members")
-    .select("id,display_name,handle,bio,avatar_url,visible")
-    .order("created_at", { ascending: true });
+    .select("id,display_name,handle,bio,avatar_url,visible,created_at")
+    .order("created_at", {ascending:true});
   if (error) {
     container.innerHTML = '<p class="muted">Could not load members: ' + escapeHtml(error.message) + '</p>';
     return;
@@ -96,10 +127,35 @@ async function loadAdminMembers() {
 }
 
 async function loadAnnouncements() {
-  const {data,error}=await db.from("announcements").select("title,body,created_at").eq("published",true).order("created_at",{ascending:false}).limit(20);
-  if(error){$("announcements").innerHTML='<p class="muted">Could not load announcements.</p>';return;}
-  $("announcements").innerHTML=data?.length?data.map(a=>`<article class="announcement"><time>${new Date(a.created_at).toLocaleDateString()}</time><h3>${escapeHtml(a.title)}</h3><p>${escapeHtml(a.body)}</p></article>`).join(""):'<p class="muted">No announcements yet.</p>';
+  const {data,error}=await db.from("announcements")
+    .select("title,body,created_at,is_pinned")
+    .eq("published",true)
+    .order("created_at",{ascending:false})
+    .limit(20);
+  if(error){
+    $("announcements").innerHTML='<p class="muted">Could not load announcements.</p>';
+    $("pinnedNewsTicker").classList.add("hidden");
+    return;
+  }
+  const pinned = (data || []).filter(a => a.is_pinned);
+  const ticker = $("pinnedNewsTicker");
+  if (pinned.length) {
+    ticker.innerHTML = `<div class="pinned-news-label">PINNED</div><div class="pinned-news-track">${[...pinned,...pinned].map(a=>`<span>${escapeHtml(a.title)}</span>`).join("")}</div>`;
+    ticker.classList.remove("hidden");
+  } else {
+    ticker.innerHTML = "";
+    ticker.classList.add("hidden");
+  }
+  $("announcements").innerHTML=data?.length?data.map(a=>`<article class="announcement">${a.is_pinned?'<span class="pinned-tag">PINNED</span> ':''}<time>${new Date(a.created_at).toLocaleDateString()}</time><h3>${escapeHtml(a.title)}</h3><p>${escapeHtml(a.body)}</p></article>`).join(""):'<p class="muted">No announcements yet.</p>';
 }
+async function loadGallery() {
+  const grid = $("galleryGrid");
+  if (!grid) return;
+  const {data, error} = await db.from("gallery_images").select("id,image_url,caption,created_at").order("created_at",{ascending:false});
+  if (error) { grid.innerHTML = '<p class="muted">Could not load gallery. Check that the gallery SQL migration has been run.</p>'; return; }
+  grid.innerHTML = data?.length ? data.map(item=>`<figure class="gallery-item"><img src="${escapeHtml(safeUrl(item.image_url))}" alt="${escapeHtml(item.caption||"Community gallery image")}" loading="lazy"><figcaption>${escapeHtml(item.caption||"")}</figcaption></figure>`).join("") : '<p class="muted">No gallery images have been added yet.</p>';
+}
+
 function escapeHtml(value) { return String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
 function safeUrl(value) { try { const u=new URL(value); return ["https:","http:"].includes(u.protocol)?u.href:""; } catch { return ""; } }
 
@@ -126,6 +182,7 @@ $("loginForm").addEventListener("submit",async e=>{e.preventDefault();if(!db)ret
 $("signOut").addEventListener("click",async()=>{await db.auth.signOut();await requireAdmin();});
 $("votingToggle").addEventListener("change",async e=>{const {error}=await db.from("site_settings").upsert({key:"voting_open",value:e.target.checked},{onConflict:"key"});message("adminMessage",error?.message||"Voting setting updated.",!!error);await loadVoting();});
 $("refreshData").addEventListener("click",loadPublic);
+$("loadMoreMembers").addEventListener("click",()=>{visibleMemberCount+=MEMBER_PAGE_SIZE;renderMembers();});
 $("categoryForm").addEventListener("submit",async e=>{e.preventDefault();const {error}=await db.from("categories").insert({name:$("newCategory").value.trim()});message("adminMessage",error?.message||"Category added.",!!error);e.target.reset();await loadVoting();});
 $("nomineeForm").addEventListener("submit",async e=>{e.preventDefault();const {error}=await db.from("nominees").insert({category_id:$("nomineeCategory").value,name:$("newNominee").value.trim()});message("adminMessage",error?.message||"Nominee added.",!!error);e.target.reset();await loadVoting();});
 $("memberForm").addEventListener("submit",async e=>{e.preventDefault();const avatar=$("memberAvatar").value.trim();const safeAvatar=avatar?safeUrl(avatar):null;if(avatar&&!safeAvatar){message("adminMessage","Enter a valid http:// or https:// avatar URL.",true);return;}const {error}=await db.from("members").insert({display_name:$("memberName").value.trim(),handle:$("memberHandle").value.trim(),bio:$("memberBio").value.trim(),avatar_url:safeAvatar});message("adminMessage",error?.message||"Member profile added.",!!error);if(!error){e.target.reset();await Promise.all([loadMembers(),loadAdminMembers()]);}});
@@ -186,6 +243,7 @@ if (memberManagement) {
   });
 }
 
-$("announcementForm").addEventListener("submit",async e=>{e.preventDefault();const {error}=await db.from("announcements").insert({title:$("announcementTitle").value.trim(),body:$("announcementBody").value.trim(),published:true});message("adminMessage",error?.message||"Announcement published.",!!error);e.target.reset();await loadAnnouncements();});
+$("announcementForm").addEventListener("submit",async e=>{e.preventDefault();const {error}=await db.from("announcements").insert({title:$("announcementTitle").value.trim(),body:$("announcementBody").value.trim(),published:true,is_pinned:$("announcementPinned").checked});message("adminMessage",error?.message||"Announcement published.",!!error);if(!error){e.target.reset();await loadAnnouncements();}});
+$("galleryForm").addEventListener("submit",async e=>{e.preventDefault();const imageUrl=safeUrl($("galleryImageUrl").value.trim());if(!imageUrl){message("adminMessage","Enter a valid direct http:// or https:// image URL.",true);return;}const {error}=await db.from("gallery_images").insert({image_url:imageUrl,caption:$("galleryCaption").value.trim()||null});message("adminMessage",error?.message||"Gallery image added.",!!error);if(!error){e.target.reset();await loadGallery();}});
 $("editionForm").addEventListener("submit",async e=>{e.preventDefault();const {error}=await db.from("award_editions").insert({title:$("editionTitle").value.trim(),year:Number($("editionYear").value),published:false});message("adminMessage",error?.message||"Draft edition created. Add winner records and publish it using the SQL instructions in README.",!!error);e.target.reset();});
 if(db){db.auth.onAuthStateChange(()=>requireAdmin());loadPublic();requireAdmin();}else{unavailable();$("adminLogin").classList.add("hidden");$("adminPanel").classList.remove("hidden");$("adminPanel").innerHTML='<p><strong>Setup required:</strong> add your Supabase URL and anon key in <code>app.js</code>, then refresh.</p>';}
