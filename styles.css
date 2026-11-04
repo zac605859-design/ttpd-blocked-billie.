@@ -107,3 +107,23 @@
   background-color: #211d1d;
   border-color: #211d1d;
 }
+
+/* COUNTDOWN COLOUR OVERRIDES ONLY — all original CSS above is preserved */
+.event-countdown-section {
+  background: linear-gradient(120deg, #202326 0%, #102b3d 100%);
+  color: #f8f3ec;
+  border-color: rgba(190, 185, 174, 0.16);
+  box-shadow: none;
+}
+.event-countdown-copy h2 { color: #f8f3ec; }
+.event-countdown-copy p { color: #c9c4bd; }
+.event-countdown-date { color: #aebdca; }
+.event-countdown-clock div {
+  background: rgba(8, 17, 25, 0.34);
+  border-color: rgba(190, 185, 174, 0.28);
+  box-shadow: inset 0 2px 7px rgba(0, 0, 0, 0.72),
+              0 5px 12px rgba(0, 0, 0, 0.48);
+}
+.event-countdown-clock strong { color: #d8c58a; }
+.event-countdown-clock span { color: #c7c0b3; }
+.event-ended { color: #d8c58a; }
