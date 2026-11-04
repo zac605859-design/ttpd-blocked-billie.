@@ -76,3 +76,6 @@
 .event-countdown-clock span{display:block;margin-top:4px;font:9px 'DM Mono';text-transform:uppercase;letter-spacing:.08em;color:#e1d2d2}
 .event-ended{font:600 15px 'DM Mono';letter-spacing:.08em;color:#f2c8d0}
 @media(max-width:760px){.event-countdown-section{width:100%;grid-template-columns:1fr;padding:23px 7vw}.event-countdown-clock{gap:6px}.event-countdown-clock div{min-width:0;flex:1;padding:10px 4px}.event-countdown-clock strong{font-size:21px}.admin-management-head{flex-direction:column}.admin-management-actions{width:100%}.admin-management-actions .button{flex:1}}
+.hero::after {
+  pointer-events: none;
+}
