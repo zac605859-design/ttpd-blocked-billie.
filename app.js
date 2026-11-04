@@ -44,10 +44,57 @@ async function loadWinners() {
   $("winnerEvents").innerHTML = editions.map(e=>`<article class="event-card"><div class="eyebrow">${e.year}</div><h3>${escapeHtml(e.title)}</h3><ul>${(winners||[]).filter(w=>w.edition_id===e.id).map(w=>`<li><strong>${escapeHtml(w.category_name)}</strong><br>${escapeHtml(w.nominee_name)}</li>`).join("")}</ul></article>`).join("");
 }
 async function loadMembers() {
-  const {data,error}=await db.from("members").select("display_name,handle,bio,avatar_url").eq("visible",true).order("display_name");
+  const {data,error}=await db.from("members").select("id,display_name,handle,bio,avatar_url").eq("visible",true).order("display_name");
   if(error){$("memberGrid").innerHTML='<p class="muted">Could not load member profiles.</p>';return;}
   $("memberGrid").innerHTML=data?.length?data.map(m=>`<article class="member-card"><div class="member-top">${m.avatar_url?`<img class="avatar" src="${safeUrl(m.avatar_url)}" alt="">`:`<div class="avatar">${escapeHtml((m.display_name||"?").slice(0,1).toUpperCase())}</div>`}<div><h3>${escapeHtml(m.display_name)}</h3><div class="handle">${escapeHtml(m.handle||"")}</div></div></div><p>${escapeHtml(m.bio||"")}</p></article>`).join(""):'<p class="muted">Member profiles will appear here.</p>';
 }
+
+async function loadAdminMembers() {
+  const container = $("memberManagementList");
+  if (!container || !db) return;
+  const {data, error} = await db.from("members")
+    .select("id,display_name,handle,bio,avatar_url,visible")
+    .order("display_name");
+  if (error) {
+    container.innerHTML = '<p class="muted">Could not load members: ' + escapeHtml(error.message) + '</p>';
+    return;
+  }
+  if (!data?.length) {
+    container.innerHTML = '<p class="muted">No member profiles have been added yet.</p>';
+    return;
+  }
+  container.innerHTML = data.map(m => `
+    <div class="admin-member-item" data-member-id="${escapeHtml(m.id)}">
+      <div class="admin-member-row">
+        <div class="admin-member-summary">
+          ${m.avatar_url && safeUrl(m.avatar_url)
+            ? `<img class="avatar" src="${escapeHtml(safeUrl(m.avatar_url))}" alt="">`
+            : `<div class="avatar">${escapeHtml((m.display_name||"?").slice(0,1).toUpperCase())}</div>`}
+          <div>
+            <h4>${escapeHtml(m.display_name)}</h4>
+            <div class="handle">${escapeHtml(m.handle||"")}</div>
+            <div class="fine-print">${m.visible ? "Visible in public directory" : "Hidden from public directory"}</div>
+          </div>
+        </div>
+        <div class="admin-member-actions">
+          <button type="button" class="button secondary small" data-action="edit">Edit</button>
+          <button type="button" class="button secondary small" data-action="delete">Delete</button>
+        </div>
+      </div>
+      <form class="admin-member-edit hidden">
+        <label>Display name<input name="display_name" required maxlength="100" value="${escapeHtml(m.display_name||"")}"></label>
+        <label>Handle<input name="handle" maxlength="100" value="${escapeHtml(m.handle||"")}"></label>
+        <label>Short bio<textarea name="bio" maxlength="500">${escapeHtml(m.bio||"")}</textarea></label>
+        <label>Avatar image URL<input name="avatar_url" type="url" placeholder="https://..." value="${escapeHtml(m.avatar_url||"")}"></label>
+        <label class="switch-line"><input name="visible" type="checkbox" ${m.visible ? "checked" : ""}> Show in public directory</label>
+        <div class="admin-member-edit-actions">
+          <button type="submit" class="button primary small">Save changes</button>
+          <button type="button" class="button secondary small" data-action="cancel">Cancel</button>
+        </div>
+      </form>
+    </div>`).join("");
+}
+
 async function loadAnnouncements() {
   const {data,error}=await db.from("announcements").select("title,body,created_at").eq("published",true).order("created_at",{ascending:false}).limit(20);
   if(error){$("announcements").innerHTML='<p class="muted">Could not load announcements.</p>';return;}
@@ -72,7 +119,7 @@ async function requireAdmin() {
   const isAdmin=session?.user?.app_metadata?.role==="admin";
   $("adminLogin").classList.toggle("hidden",!!isAdmin);
   $("adminPanel").classList.toggle("hidden",!isAdmin);
-  if(isAdmin){const {data}=await db.from("site_settings").select("value").eq("key","voting_open").maybeSingle();$("votingToggle").checked=data?.value===true;}
+  if(isAdmin){const {data}=await db.from("site_settings").select("value").eq("key","voting_open").maybeSingle();$("votingToggle").checked=data?.value===true;await loadAdminMembers();}
   return isAdmin;
 }
 $("loginForm").addEventListener("submit",async e=>{e.preventDefault();if(!db)return;const {error}=await db.auth.signInWithPassword({email:$("adminEmail").value,password:$("adminPassword").value});message("loginMessage",error?error.message:"Signed in.",!!error);await requireAdmin();});
@@ -81,7 +128,64 @@ $("votingToggle").addEventListener("change",async e=>{const {error}=await db.fro
 $("refreshData").addEventListener("click",loadPublic);
 $("categoryForm").addEventListener("submit",async e=>{e.preventDefault();const {error}=await db.from("categories").insert({name:$("newCategory").value.trim()});message("adminMessage",error?.message||"Category added.",!!error);e.target.reset();await loadVoting();});
 $("nomineeForm").addEventListener("submit",async e=>{e.preventDefault();const {error}=await db.from("nominees").insert({category_id:$("nomineeCategory").value,name:$("newNominee").value.trim()});message("adminMessage",error?.message||"Nominee added.",!!error);e.target.reset();await loadVoting();});
-$("memberForm").addEventListener("submit",async e=>{e.preventDefault();const avatar=$("memberAvatar").value.trim();const {error}=await db.from("members").insert({display_name:$("memberName").value.trim(),handle:$("memberHandle").value.trim(),bio:$("memberBio").value.trim(),avatar_url:avatar?safeUrl(avatar):null});message("adminMessage",error?.message||"Member profile added.",!!error);e.target.reset();await loadMembers();});
+$("memberForm").addEventListener("submit",async e=>{e.preventDefault();const avatar=$("memberAvatar").value.trim();const safeAvatar=avatar?safeUrl(avatar):null;if(avatar&&!safeAvatar){message("adminMessage","Enter a valid http:// or https:// avatar URL.",true);return;}const {error}=await db.from("members").insert({display_name:$("memberName").value.trim(),handle:$("memberHandle").value.trim(),bio:$("memberBio").value.trim(),avatar_url:safeAvatar});message("adminMessage",error?.message||"Member profile added.",!!error);if(!error){e.target.reset();await Promise.all([loadMembers(),loadAdminMembers()]);}});
+
+const memberManagement = $("memberManagementList");
+if (memberManagement) {
+  memberManagement.addEventListener("click", async e => {
+    const button = e.target.closest("button[data-action]");
+    if (!button) return;
+    const item = button.closest(".admin-member-item");
+    if (!item) return;
+    const action = button.dataset.action;
+    if (action === "edit") {
+      item.querySelector(".admin-member-edit").classList.remove("hidden");
+      item.querySelector('input[name="display_name"]').focus();
+    } else if (action === "cancel") {
+      item.querySelector(".admin-member-edit").classList.add("hidden");
+    } else if (action === "delete") {
+      const displayName = item.querySelector("h4")?.textContent || "this member";
+      if (!confirm(`Delete ${displayName}? This cannot be undone.`)) return;
+      button.disabled = true;
+      const {error} = await db.from("members").delete().eq("id", item.dataset.memberId);
+      message("adminMessage", error?.message || "Member deleted.", !!error);
+      if (error) button.disabled = false;
+      else await Promise.all([loadAdminMembers(), loadMembers()]);
+    }
+  });
+
+  memberManagement.addEventListener("submit", async e => {
+    const form = e.target.closest(".admin-member-edit");
+    if (!form) return;
+    e.preventDefault();
+    const item = form.closest(".admin-member-item");
+    const values = new FormData(form);
+    const avatarInput = String(values.get("avatar_url") || "").trim();
+    const avatar = avatarInput ? safeUrl(avatarInput) : null;
+    if (avatarInput && !avatar) {
+      message("adminMessage", "Enter a valid http:// or https:// avatar URL.", true);
+      return;
+    }
+    const updates = {
+      display_name: String(values.get("display_name") || "").trim(),
+      handle: String(values.get("handle") || "").trim(),
+      bio: String(values.get("bio") || "").trim(),
+      avatar_url: avatar,
+      visible: form.elements.visible.checked
+    };
+    if (!updates.display_name) {
+      message("adminMessage", "Display name is required.", true);
+      return;
+    }
+    const saveButton = form.querySelector('button[type="submit"]');
+    saveButton.disabled = true;
+    const {error} = await db.from("members").update(updates).eq("id", item.dataset.memberId);
+    message("adminMessage", error?.message || "Member profile updated.", !!error);
+    saveButton.disabled = false;
+    if (!error) await Promise.all([loadAdminMembers(), loadMembers()]);
+  });
+}
+
 $("announcementForm").addEventListener("submit",async e=>{e.preventDefault();const {error}=await db.from("announcements").insert({title:$("announcementTitle").value.trim(),body:$("announcementBody").value.trim(),published:true});message("adminMessage",error?.message||"Announcement published.",!!error);e.target.reset();await loadAnnouncements();});
 $("editionForm").addEventListener("submit",async e=>{e.preventDefault();const {error}=await db.from("award_editions").insert({title:$("editionTitle").value.trim(),year:Number($("editionYear").value),published:false});message("adminMessage",error?.message||"Draft edition created. Add winner records and publish it using the SQL instructions in README.",!!error);e.target.reset();});
 if(db){db.auth.onAuthStateChange(()=>requireAdmin());loadPublic();requireAdmin();}else{unavailable();$("adminLogin").classList.add("hidden");$("adminPanel").classList.remove("hidden");$("adminPanel").innerHTML='<p><strong>Setup required:</strong> add your Supabase URL and anon key in <code>app.js</code>, then refresh.</p>';}
