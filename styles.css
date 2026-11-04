@@ -82,3 +82,10 @@
 .hero::after {
   pointer-events: none;
 }
+.hero h1 {
+  color: var(--cream);
+}
+
+.hero h1 em {
+  color: #302820;
+}
