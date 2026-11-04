@@ -130,3 +130,7 @@
 .event-countdown-section .eyebrow {
   color: #d8c58a;
 }
+/* Voting page background */
+#voting.section {
+  background-color: #70786B;
+}
