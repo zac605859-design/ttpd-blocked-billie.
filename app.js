@@ -54,7 +54,7 @@ async function loadAdminMembers() {
   if (!container || !db) return;
   const {data, error} = await db.from("members")
     .select("id,display_name,handle,bio,avatar_url,visible")
-    .order("display_name");
+    .order("created_at", { ascending: true });
   if (error) {
     container.innerHTML = '<p class="muted">Could not load members: ' + escapeHtml(error.message) + '</p>';
     return;
