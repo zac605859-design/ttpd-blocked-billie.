@@ -89,3 +89,11 @@
 .hero h1 em {
   color: #302820;
 }
+.hero h1 .welcome-text {
+  font-size: 0.75em;
+}
+
+.hero h1 em {
+  display: inline-block;
+  margin-top: 10px;
+}
