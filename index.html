@@ -16,7 +16,7 @@
     </a>
     <button class="menu-toggle" id="menuToggle" aria-label="Toggle navigation">☰</button>
     <nav id="mainNav">
-      <a href="#vote">Voting</a><a href="#winners">Winners</a><a href="#members">Members</a><a href="#newsletter">News</a><a href="#gallery">Gallery</a>
+      <a href="#vote">Voting</a><a href="#winners">Winners</a><a href="#admins">Admins</a><a href="#members">Members</a><a href="#newsletter">News</a><a href="#gallery">Gallery</a>
       <a class="admin-link" href="#admin">Admin</a>
     </nav>
   </header>
@@ -31,6 +31,7 @@
       <div class="hero-actions">
   <a class="button primary" href="#vote">Voting</a>
   <a class="button secondary" href="#winners">Winners</a>
+  <a class="button secondary" href="#admins">Admins</a>
   <a class="button secondary" href="#members">Members</a>
   <a class="button secondary" href="#newsletter">News</a>
   <a class="button secondary" href="#gallery">Gallery</a>
@@ -52,9 +53,15 @@
       <div id="winnerSeasonOptions" class="winner-season-options"><p class="muted">Loading seasons…</p></div><div id="winnerSeasonResults" class="winner-season-results" aria-live="polite"><p class="muted">Select a season to view its winners.</p></div>
     </section>
 
+    <section class="section" id="admins">
+      <div class="section-heading"><div><div class="eyebrow">03 / THE PEOPLE</div><h2>Meet the admins</h2></div><span class="section-aside">Admin-managed directory</span></div>
+      <p class="section-intro">The people maintaining this community hub.</p>
+      <div id="adminGrid" class="member-grid"><p class="muted">Loading admin profiles…</p></div>
+      <div class="member-load-more-wrap"><button id="loadMoreAdmins" class="button secondary hidden" type="button">Show more</button></div>
+    </section>
     <section class="section" id="members">
-      <div class="section-heading"><div><div class="eyebrow">03 / THE PEOPLE</div><h2>Meet the members</h2></div><span class="section-aside">Admin-managed directory</span></div>
-      <p class="section-intro">A directory of community members, curated and maintained by the admin team.</p>
+      <div class="section-heading"><div><div class="eyebrow">04 / THE COMMUNITY</div><h2>Meet the members</h2></div><span class="section-aside">Community directory</span></div>
+      <p class="section-intro">A directory of community members.</p>
       <div id="memberGrid" class="member-grid"><p class="muted">Loading member profiles…</p></div>
       <div class="member-load-more-wrap"><button id="loadMoreMembers" class="button secondary hidden" type="button">Show more</button></div>
     </section>
@@ -71,6 +78,7 @@
       <div id="galleryGrid" class="gallery-grid"><p class="muted">Loading gallery…</p></div>
     </section>
 
+    <section id="eventCountdownSection" class="event-countdown-section hidden"><div class="event-countdown-copy"><div class="eyebrow">UP NEXT</div><h2 id="eventCountdownTitle"></h2><p id="eventCountdownDescription"></p><div id="eventCountdownDate" class="event-countdown-date"></div></div><div id="eventCountdownClock" class="event-countdown-clock"></div></section>
     <section class="section admin-section" id="admin">
       <div class="section-heading"><div><div class="eyebrow">PRIVATE AREA</div><h2>Admin dashboard</h2></div><span class="section-aside">Admin access only</span></div>
       <div id="adminLogin" class="admin-panel">
@@ -84,10 +92,15 @@
           <div class="admin-card"><h3>Voting controls</h3><label class="switch-line"><input type="checkbox" id="votingToggle"> Voting is open</label><button class="button secondary small" id="refreshData">Refresh public site</button></div>
           <div class="admin-card"><h3>Add a category</h3><form id="categoryForm"><input id="newCategory" placeholder="Category name" required><button class="button secondary small">Add category</button></form></div>
           <div class="admin-card"><h3>Add a nominee</h3><form id="nomineeForm"><select id="nomineeCategory" required></select><input id="newNominee" placeholder="Nominee name / @handle" required><button class="button secondary small">Add nominee</button></form></div>
+          <div class="admin-card"><h3>Add an admin</h3><form id="adminForm"><input id="adminName" placeholder="Display name" required><input id="adminHandle" placeholder="@handle"><input id="adminBio" placeholder="Short bio"><input id="adminAvatar" placeholder="Avatar image URL (optional)"><button class="button secondary small">Add admin</button></form></div>
+          <div class="admin-card member-management-card"><h3>Manage admins</h3><div id="adminManagementList" class="member-management-list"><p class="muted">Sign in to load admins.</p></div></div>
           <div class="admin-card"><h3>Add a member</h3><form id="memberForm"><input id="memberName" placeholder="Display name" required><input id="memberHandle" placeholder="@handle"><input id="memberBio" placeholder="Short bio"><input id="memberAvatar" placeholder="Avatar image URL (optional)"><button class="button secondary small">Add member</button></form></div>
-          <div class="admin-card member-management-card"><h3>Manage existing members</h3><p class="fine-print">Edit profile details, add or replace avatar URLs, or remove a member from the directory.</p><div id="memberManagementList" class="member-management-list"><p class="muted">Sign in to load members.</p></div></div>
+          <div class="admin-card member-management-card"><h3>Manage members</h3><div id="memberManagementList" class="member-management-list"><p class="muted">Sign in to load members.</p></div></div>
+          <div class="admin-card admin-wide"><h3>Manage announcements</h3><div id="announcementManagementList" class="admin-management-list"></div></div>
           <div class="admin-card"><h3>Publish an announcement</h3><form id="announcementForm"><input id="announcementTitle" placeholder="Announcement title" required><textarea id="announcementBody" placeholder="Write the announcement…" required></textarea><label class="switch-line"><input type="checkbox" id="announcementPinned"> Pin this announcement on the homepage</label><button class="button secondary small">Publish</button></form></div>
           <div class="admin-card"><h3>Add a gallery image</h3><form id="galleryForm"><input id="galleryImageUrl" type="url" placeholder="Direct image URL (https://...)" required><input id="galleryCaption" placeholder="Caption (optional)"><button class="button secondary small">Add image</button></form><p class="fine-print">Add images one at a time. You can add 5–10 or more. Use direct image URLs, not viewer-page links.</p></div>
+          <div class="admin-card admin-wide"><h3>Manage seasons and winners</h3><div id="winnerManagementList" class="admin-management-list"></div><form id="winnerEntryForm"><select id="winnerEntrySeason" required></select><input id="winnerEntryCategory" placeholder="Category" required><input id="winnerEntryName" placeholder="Winner / nominee name" required><button class="button secondary small">Add winner</button></form></div>
+          <div class="admin-card admin-wide"><h3>Homepage event countdown</h3><form id="eventForm"><input id="eventTitleInput" placeholder="Event title" required><textarea id="eventDescriptionInput" placeholder="Event description"></textarea><label>Event date and time<input id="eventDateTimeInput" type="datetime-local" required></label><button class="button secondary small">Save countdown</button></form><div id="eventManagement"></div></div>
           <div class="admin-card"><h3>Publish award edition</h3><form id="editionForm"><input id="editionTitle" placeholder="Edition title (e.g. 2026 Awards)" required><input id="editionYear" type="number" min="2000" max="2100" placeholder="Year" required><button class="button secondary small">Create edition</button></form><p class="fine-print">After creating an edition, use the SQL admin workflow in README to attach category winners and publish it. This avoids exposing unpublished results.</p></div>
         </div>
         <p id="adminMessage" class="form-message" role="status"></p>
