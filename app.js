@@ -35,7 +35,7 @@ async function loadVoting() {
   $("nomineeCategory").innerHTML = categoryCache.map(c=>`<option value="${c.id}">${escapeHtml(c.name)}</option>`).join("");
 }
 async function loadWinners() {
-  const {data: editions, error} = await db.from("award_editions").select("id,title,year").eq("published",true).order("year",{ascending:true}).order("created_at",{ascending:true});
+  const {data: editions, error} = await db.from("award_editions").select("id,title,month,year").eq("published",true).order("year",{ascending:true}).order("month",{ascending:true}).order("created_at",{ascending:true});
   const options = $("winnerSeasonOptions");
   const results = $("winnerSeasonResults");
   if (error) { options.innerHTML = '<p class="muted">Could not load published seasons.</p>'; return; }
@@ -43,11 +43,11 @@ async function loadWinners() {
   const ids = editions.map(e=>e.id);
   const {data: winners, error: winnerError} = await db.from("winner_entries").select("edition_id,category_name,nominee_name").in("edition_id",ids);
   if (winnerError) { options.innerHTML = '<p class="muted">Could not load winner records.</p>'; return; }
-  options.innerHTML = editions.map((e,i)=>`<button type="button" class="winner-season-button${i===0?' active':''}" data-edition-id="${e.id}"><span>${escapeHtml(e.title)}</span><small>${e.year}</small></button>`).join("");
+  options.innerHTML = editions.map((e,i)=>`<button type="button" class="winner-season-button${i===0?' active':''}" data-edition-id="${e.id}"><span>${escapeHtml(e.title)}</span><small>${new Date(Number(e.year), Number(e.month || 1) - 1).toLocaleString("en", {month:"long"})} ${e.year}</small></button>`).join("");
   const showSeason = id => {
     const edition = editions.find(e=>e.id===id);
     const rows = (winners||[]).filter(w=>w.edition_id===id);
-    results.innerHTML = `<div class="winner-season-heading"><div class="eyebrow">${edition.year}</div><h3>${escapeHtml(edition.title)}</h3></div>` + (rows.length ? `<div class="winner-list">${rows.map(w=>`<article class="winner-row"><strong>${escapeHtml(w.category_name)}</strong><span>${escapeHtml(w.nominee_name)}</span></article>`).join("")}</div>` : '<p class="muted">No winners have been added to this season yet.</p>');
+    results.innerHTML = `<div class="winner-season-heading"><div class="eyebrow">${new Date(Number(edition.year), Number(edition.month || 1) - 1).toLocaleString("en", {month:"long"})} ${edition.year}</div><h3>${escapeHtml(edition.title)}</h3></div>` + (rows.length ? `<div class="winner-list">${rows.map(w=>`<article class="winner-row"><strong>${escapeHtml(w.category_name)}</strong><span>${escapeHtml(w.nominee_name)}</span></article>`).join("")}</div>` : '<p class="muted">No winners have been added to this season yet.</p>');
     options.querySelectorAll(".winner-season-button").forEach(b=>b.classList.toggle("active",b.dataset.editionId===id));
   };
   options.onclick = e => { const button=e.target.closest("button[data-edition-id]"); if(button) showSeason(button.dataset.editionId); };
@@ -85,7 +85,7 @@ async function loadAnnouncements() {
   const pinned = (data || []).filter(a => a.is_pinned);
   const ticker = $("pinnedNewsTicker");
   if (pinned.length) {
-    ticker.innerHTML = `<div class="pinned-news-track">${[...pinned,...pinned].map(a=>`<span>${escapeHtml(a.title)}</span>`).join("")}</div>`;
+    ticker.innerHTML = `<div class="pinned-news-label">PINNED</div><div class="pinned-news-track">${[...pinned,...pinned].map(a=>`<span>${escapeHtml(a.title)}</span>`).join("")}</div>`;
     ticker.classList.remove("hidden");
   } else {
     ticker.innerHTML = "";
@@ -137,7 +137,13 @@ $("memberForm").addEventListener("submit",e=>addDirectoryEntry(e,"members"));
 ["adminManagementList","memberManagementList"].forEach(id=>{const box=$(id);if(!box)return;box.addEventListener("click",async e=>{const button=e.target.closest("button[data-action]");if(!button)return;const item=button.closest(".admin-member-item");if(!item)return;const key=item.dataset.directoryKey,state=directoryState[key];if(button.dataset.action==="edit"){item.querySelector(".admin-member-edit").classList.remove("hidden");item.querySelector('input[name="display_name"]').focus();}else if(button.dataset.action==="cancel"){item.querySelector(".admin-member-edit").classList.add("hidden");}else if(button.dataset.action==="delete"){const name=item.querySelector("h4")?.textContent||`this ${state.label}`;if(!confirm(`Delete ${name}? This cannot be undone.`))return;button.disabled=true;const {error}=await db.from(state.table).delete().eq("id",item.dataset.memberId);message("adminMessage",error?.message||`${state.label} deleted.`,!!error);if(error)button.disabled=false;else await Promise.all([loadMembers(),loadAdminMembers()]);}});box.addEventListener("submit",async e=>{const form=e.target.closest(".admin-member-edit");if(!form)return;e.preventDefault();const item=form.closest(".admin-member-item"),key=item.dataset.directoryKey,state=directoryState[key],values=new FormData(form),avatarInput=String(values.get("avatar_url")||"").trim(),avatar=avatarInput?safeUrl(avatarInput):null;if(avatarInput&&!avatar){message("adminMessage","Enter a valid http:// or https:// avatar URL.",true);return;}const updates={display_name:String(values.get("display_name")||"").trim(),handle:String(values.get("handle")||"").trim(),bio:String(values.get("bio")||"").trim(),avatar_url:avatar,visible:form.elements.visible.checked};if(!updates.display_name){message("adminMessage","Display name is required.",true);return;}const save=form.querySelector('button[type="submit"]');save.disabled=true;const {error}=await db.from(state.table).update(updates).eq("id",item.dataset.memberId);message("adminMessage",error?.message||`${state.label} profile updated.`,!!error);save.disabled=false;if(!error)await Promise.all([loadMembers(),loadAdminMembers()]);});});
 $("announcementForm").addEventListener("submit",async e=>{e.preventDefault();const {error}=await db.from("announcements").insert({title:$("announcementTitle").value.trim(),body:$("announcementBody").value.trim(),published:true,is_pinned:$("announcementPinned").checked});message("adminMessage",error?.message||"Announcement published.",!!error);if(!error){e.target.reset();await loadAnnouncements();}});
 $("galleryForm").addEventListener("submit",async e=>{e.preventDefault();const imageUrl=safeUrl($("galleryImageUrl").value.trim());if(!imageUrl){message("adminMessage","Enter a valid direct http:// or https:// image URL.",true);return;}const {error}=await db.from("gallery_images").insert({image_url:imageUrl,caption:$("galleryCaption").value.trim()||null});message("adminMessage",error?.message||"Gallery image added.",!!error);if(!error){e.target.reset();await loadGallery();}});
-$("editionForm").addEventListener("submit",async e=>{e.preventDefault();const {error}=await db.from("award_editions").insert({title:$("editionTitle").value.trim(),year:Number($("editionYear").value),published:false});message("adminMessage",error?.message||"Draft edition created. Add winner records and publish it using the SQL instructions in README.",!!error);e.target.reset();});
+$("editionForm").addEventListener("submit",async e=>{
+  e.preventDefault();
+  const payload={title:$("editionTitle").value.trim(),month:Number($("editionMonth").value),year:Number($("editionYear").value),published:false};
+  const {error}=await db.from("award_editions").insert(payload);
+  message("adminMessage",error?.message||"Draft season created. Add its winners below, then publish it from Manage seasons and winners.",!!error);
+  if(!error){e.target.reset();await loadWinnerManagement();}
+});
 if(db){db.auth.onAuthStateChange(()=>requireAdmin());loadPublic();requireAdmin();}else{unavailable();$("adminLogin").classList.add("hidden");$("adminPanel").classList.remove("hidden");$("adminPanel").innerHTML='<p><strong>Setup required:</strong> add your Supabase URL and anon key in <code>app.js</code>, then refresh.</p>';}
 
 // --- Admin management: announcements, award seasons/winners, and one homepage event ---
@@ -159,10 +165,10 @@ async function loadAnnouncementManagement() {
 async function loadWinnerManagement() {
   const box = $("winnerManagementList");
   if (!box || !db) return;
-  const {data: editions, error} = await db.from("award_editions").select("id,title,year,published,created_at").order("year", {ascending:true}).order("created_at", {ascending:true});
+  const {data: editions, error} = await db.from("award_editions").select("id,title,month,year,published,created_at").order("year", {ascending:true}).order("month", {ascending:true}).order("created_at", {ascending:true});
   if (error) { box.innerHTML = `<p class="muted">Could not load seasons: ${escapeHtml(error.message)}</p>`; return; }
   const seasonSelect = $("winnerEntrySeason");
-  seasonSelect.innerHTML = (editions || []).map(e => `<option value="${e.id}">${escapeHtml(e.title)} (${e.year})</option>`).join("");
+  seasonSelect.innerHTML = (editions || []).map(e => `<option value="${e.id}">${escapeHtml(e.title)} (${new Date(Number(e.year), Number(e.month || 1) - 1).toLocaleString("en", {month:"long"})} ${e.year})</option>`).join("");
   if (!editions?.length) { box.innerHTML = '<p class="muted">Create a season first.</p>'; return; }
   const ids = editions.map(e => e.id);
   const {data: entries, error: entriesError} = await db.from("winner_entries").select("id,edition_id,category_name,nominee_name").in("edition_id", ids);
@@ -170,9 +176,9 @@ async function loadWinnerManagement() {
   box.innerHTML = editions.map(ed => {
     const rows = (entries || []).filter(w => w.edition_id === ed.id);
     return `<article class="admin-management-item" data-season-id="${ed.id}">
-      <div class="admin-management-head"><div><h4>${escapeHtml(ed.title)} (${ed.year})</h4><small class="fine-print">${ed.published ? 'Published on website' : 'Draft — not visible publicly'} · ${rows.length} winner entries</small></div>
+      <div class="admin-management-head"><div><h4>${escapeHtml(ed.title)} (${new Date(Number(ed.year), Number(ed.month || 1) - 1).toLocaleString("en", {month:"long"})} ${ed.year})</h4><small class="fine-print">${ed.published ? 'Published on website' : 'Draft — not visible publicly'} · ${rows.length} winner entries</small></div>
       <div class="admin-management-actions"><button type="button" class="button secondary small" data-action="edit-season">Edit season</button><button type="button" class="button secondary small" data-action="toggle-published">${ed.published ? 'Unpublish' : 'Publish'}</button><button type="button" class="button secondary small" data-action="delete-season">Delete season</button></div></div>
-      <form class="admin-edit-form season-edit-form hidden"><input name="title" required value="${escapeHtml(ed.title)}"><input name="year" type="number" min="2000" max="2100" required value="${ed.year}"><div class="admin-management-actions"><button class="button primary small" type="submit">Save season</button><button type="button" class="button secondary small" data-action="cancel">Cancel</button></div></form>
+      <form class="admin-edit-form season-edit-form hidden"><input name="title" required value="${escapeHtml(ed.title)}"><select name="month" required>${Array.from({length:12},(_,i)=>`<option value="${i+1}" ${Number(ed.month||1)===i+1?"selected":""}>${new Date(2000,i,1).toLocaleString("en",{month:"long"})}</option>`).join("")}</select><input name="year" type="number" min="2000" max="2100" required value="${ed.year}"><div class="admin-management-actions"><button class="button primary small" type="submit">Save season</button><button type="button" class="button secondary small" data-action="cancel">Cancel</button></div></form>
       <div class="admin-management-list season-winner-list">${rows.length ? rows.map(w => `<div class="admin-management-item" data-winner-id="${w.id}"><div class="admin-management-head"><div><h4>${escapeHtml(w.category_name)}</h4><p>${escapeHtml(w.nominee_name)}</p></div><div class="admin-management-actions"><button type="button" class="button secondary small" data-action="edit-winner">Edit</button><button type="button" class="button secondary small" data-action="delete-winner">Delete</button></div></div><form class="admin-edit-form winner-edit-form hidden"><input name="category_name" required value="${escapeHtml(w.category_name)}"><input name="nominee_name" required value="${escapeHtml(w.nominee_name)}"><div class="admin-management-actions"><button class="button primary small" type="submit">Save winner</button><button type="button" class="button secondary small" data-action="cancel">Cancel</button></div></form></div>`).join("") : '<p class="muted">No category winners added yet.</p>'}</div>
     </article>`;
   }).join("");
@@ -297,7 +303,7 @@ winnerManagement?.addEventListener("submit", async e => {
   const values=new FormData(form);
   let result;
   if(row) result=await db.from("winner_entries").update({category_name:String(values.get("category_name")||"").trim(),nominee_name:String(values.get("nominee_name")||"").trim()}).eq("id",row.dataset.winnerId);
-  else result=await db.from("award_editions").update({title:String(values.get("title")||"").trim(),year:Number(values.get("year"))}).eq("id",season.dataset.seasonId);
+  else result=await db.from("award_editions").update({title:String(values.get("title")||"").trim(),month:Number(values.get("month")),year:Number(values.get("year"))}).eq("id",season.dataset.seasonId);
   message("adminMessage",result.error?.message||(row?"Winner updated.":"Season updated."),!!result.error);
   if(!result.error) await Promise.all([loadWinnerManagement(),loadWinners()]);
 });
