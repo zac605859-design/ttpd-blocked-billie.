@@ -159,3 +159,9 @@
 #gallery {
   background-color: #C9A8FF !important;
 }
+#adminCount,
+#memberCount {
+  font-size: 0.55em;
+  font-weight: normal;
+  vertical-align: middle;
+}
