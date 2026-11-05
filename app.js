@@ -15,7 +15,7 @@ function message(id, text, error=false) {
   const el = $(id); if (el) { el.textContent = text; el.style.color = error ? "#a12d43" : "#42664c"; }
 }
 function unavailable() {
-  ["categories","winnerSeasonOptions","adminGrid","memberGrid","announcements","galleryGrid"].forEach(id => { if ($(id)) $(id).innerHTML = '<p class="muted">Connect Supabase to load this section. See README.md.</p>'; });
+  ["categories","winnerSeasonOptions","adminGrid","memberGrid","announcements","galleryAlbumsgrid"].forEach(id => { if ($(id)) $(id).innerHTML = '<p class="muted">Connect Supabase to load this section. See README.md.</p>'; });
   $("votingStatus").textContent = "Setup required";
 }
 async function loadPublic() {
@@ -105,12 +105,216 @@ async function loadAnnouncements() {
   }
   $("announcements").innerHTML=data?.length?data.map(a=>`<article class="announcement">${a.is_pinned?'<span class="pinned-tag">PINNED</span> ':''}<time>${new Date(a.created_at).toLocaleDateString()}</time><h3>${escapeHtml(a.title)}</h3><p>${escapeHtml(a.body)}</p></article>`).join(""):'<p class="muted">No announcements yet.</p>';
 }
+let galleryAlbumsCache = [];
+
 async function loadGallery() {
-  const grid = $("galleryGrid");
-  if (!grid) return;
-  const {data, error} = await db.from("gallery_images").select("id,image_url,caption,created_at").order("created_at",{ascending:false});
-  if (error) { grid.innerHTML = '<p class="muted">Could not load gallery. Check that the gallery SQL migration has been run.</p>'; return; }
-  grid.innerHTML = data?.length ? data.map(item=>`<figure class="gallery-item"><img src="${escapeHtml(safeUrl(item.image_url))}" alt="${escapeHtml(item.caption||"Community gallery image")}" loading="lazy"><figcaption>${escapeHtml(item.caption||"")}</figcaption></figure>`).join("") : '<p class="muted">No gallery images have been added yet.</p>';
+  const grid = $("galleryAlbumsGrid");
+  const viewer = $("galleryAlbumViewer");
+  if (!grid || !db) return;
+
+  const { data: albums, error } = await db
+    .from("gallery_albums")
+    .select("id,title,display_order,created_at")
+    .order("display_order", { ascending: true })
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    grid.innerHTML = `<p class="muted">Could not load gallery seasons: ${escapeHtml(error.message)}</p>`;
+    return;
+  }
+
+  galleryAlbumsCache = albums || [];
+
+  if (!galleryAlbumsCache.length) {
+    grid.innerHTML = '<p class="muted">No seasons have been added yet.</p>';
+    if (viewer) viewer.classList.add("hidden");
+    return;
+  }
+
+  const albumIds = galleryAlbumsCache.map(album => album.id);
+  const { data: images, error: imageError } = await db
+    .from("gallery_album_images")
+    .select("id,album_id,image_url,caption,display_order")
+    .in("album_id", albumIds)
+    .order("display_order", { ascending: true });
+
+  if (imageError) {
+    grid.innerHTML = `<p class="muted">Could not load gallery images: ${escapeHtml(imageError.message)}</p>`;
+    return;
+  }
+
+  const imagesByAlbum = {};
+  (images || []).forEach(image => {
+    if (!imagesByAlbum[image.album_id]) imagesByAlbum[image.album_id] = [];
+    imagesByAlbum[image.album_id].push(image);
+  });
+
+  grid.innerHTML = galleryAlbumsCache.map(album => {
+    const albumImages = imagesByAlbum[album.id] || [];
+    const cover = albumImages[0];
+
+    return `
+      <button type="button"
+        class="gallery-album-card"
+        data-gallery-album-id="${escapeHtml(album.id)}">
+        <div class="gallery-album-cover">
+          ${cover && safeUrl(cover.image_url)
+            ? `<img src="${escapeHtml(safeUrl(cover.image_url))}" alt="${escapeHtml(album.title)}" loading="lazy">`
+            : '<div class="gallery-album-placeholder">No cover image</div>'}
+        </div>
+        <div class="gallery-album-card-info">
+          <h3>${escapeHtml(album.title)}</h3>
+          <span>${albumImages.length} ${albumImages.length === 1 ? "photo" : "photos"}</span>
+        </div>
+      </button>`;
+  }).join("");
+
+  grid.querySelectorAll("[data-gallery-album-id]").forEach(button => {
+    button.addEventListener("click", () => {
+      showGalleryAlbum(button.dataset.galleryAlbumId, imagesByAlbum);
+    });
+  });
+
+  if (viewer) viewer.classList.add("hidden");
+}
+
+function showGalleryAlbum(albumId, imagesByAlbum) {
+  const album = galleryAlbumsCache.find(item => item.id === albumId);
+  if (!album) return;
+
+  const viewer = $("galleryAlbumViewer");
+  const title = $("galleryAlbumViewerTitle");
+  const content = $("galleryAlbumViewerContent");
+  const grid = $("galleryAlbumsGrid");
+
+  if (!viewer || !content || !title) return;
+
+  const images = imagesByAlbum[albumId] || [];
+
+  title.textContent = album.title;
+  content.innerHTML = images.length
+    ? images.map(image => `
+        <figure class="gallery-album-image">
+          <img src="${escapeHtml(safeUrl(image.image_url))}"
+               alt="${escapeHtml(image.caption || album.title)}"
+               loading="lazy">
+          ${image.caption ? `<figcaption>${escapeHtml(image.caption)}</figcaption>` : ""}
+        </figure>
+      `).join("")
+    : '<p class="muted">No images have been added to this season yet.</p>';
+
+  grid.classList.add("hidden");
+  viewer.classList.remove("hidden");
+  viewer.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+$("galleryBackButton")?.addEventListener("click", () => {
+  $("galleryAlbumViewer").classList.add("hidden");
+  $("galleryAlbumsGrid").classList.remove("hidden");
+  $("gallery").scrollIntoView({ behavior: "smooth", block: "start" });
+});
+
+async function loadGalleryAdmin() {
+  const box = $("galleryAdminManagementList");
+  if (!box || !db) return;
+
+  const { data: albums, error } = await db
+    .from("gallery_albums")
+    .select("id,title,display_order,created_at")
+    .order("display_order", { ascending: true })
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    box.innerHTML = `<p class="muted">Could not load seasons: ${escapeHtml(error.message)}</p>`;
+    return;
+  }
+
+  if (!albums?.length) {
+    box.innerHTML = '<p class="muted">No gallery seasons yet.</p>';
+    return;
+  }
+
+  const { data: images, error: imageError } = await db
+    .from("gallery_album_images")
+    .select("id,album_id,image_url,caption,display_order")
+    .in("album_id", albums.map(album => album.id))
+    .order("display_order", { ascending: true });
+
+  if (imageError) {
+    box.innerHTML = `<p class="muted">Could not load album images: ${escapeHtml(imageError.message)}</p>`;
+    return;
+  }
+
+  box.innerHTML = albums.map(album => {
+    const albumImages = (images || []).filter(image => image.album_id === album.id);
+
+    return `
+      <div class="gallery-admin-album" data-album-id="${escapeHtml(album.id)}">
+        <div class="gallery-admin-album-heading">
+          <div>
+            <h4>${escapeHtml(album.title)}</h4>
+            <p class="fine-print">${albumImages.length} of 4 images</p>
+          </div>
+          <div class="admin-management-actions">
+            <button type="button" class="button secondary small" data-action="edit-album">Edit season</button>
+            <button type="button" class="button secondary small" data-action="delete-album">Delete season</button>
+          </div>
+        </div>
+        <div class="gallery-admin-thumbnails">
+          ${albumImages.map(image => `
+            <div class="gallery-admin-thumbnail" data-image-id="${escapeHtml(image.id)}">
+              <img src="${escapeHtml(safeUrl(image.image_url))}" alt="">
+              <span>${escapeHtml(image.caption || `Image ${image.display_order}`)}</span>
+              <button type="button" class="button secondary small" data-action="delete-image">Delete image</button>
+            </div>
+          `).join("")}
+        </div>
+      </div>`;
+  }).join("");
+}
+
+function resetGalleryAlbumForm() {
+  $("galleryAlbumForm").reset();
+  $("galleryAlbumId").value = "";
+  $("galleryAlbumSaveButton").textContent = "Create season";
+  $("galleryAlbumCancelButton").classList.add("hidden");
+}
+
+async function editGalleryAlbum(albumId) {
+  const { data: album, error } = await db
+    .from("gallery_albums")
+    .select("id,title")
+    .eq("id", albumId)
+    .single();
+
+  if (error) {
+    message("adminMessage", error.message, true);
+    return;
+  }
+
+  const { data: images, error: imageError } = await db
+    .from("gallery_album_images")
+    .select("image_url,caption,display_order")
+    .eq("album_id", albumId)
+    .order("display_order", { ascending: true });
+
+  if (imageError) {
+    message("adminMessage", imageError.message, true);
+    return;
+  }
+
+  $("galleryAlbumId").value = album.id;
+  $("galleryAlbumTitle").value = album.title;
+
+  for (let slot = 1; slot <= 4; slot++) {
+    const image = (images || []).find(item => item.display_order === slot);
+    $(`galleryImageUrl${slot}`).value = image?.image_url || "";
+    $(`galleryCaption${slot}`).value = image?.caption || "";
+  }
+
+  $("galleryAlbumSaveButton").textContent = "Save changes";
+  $("galleryAlbumCancelButton").classList.remove("hidden");
+  $("galleryAlbumForm").scrollIntoView({ behavior: "smooth", block: "center" });
 }
 
 function escapeHtml(value) { return String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
@@ -132,7 +336,20 @@ async function requireAdmin() {
   const isAdmin=session?.user?.app_metadata?.role==="admin";
   $("adminLogin").classList.toggle("hidden",!!isAdmin);
   $("adminPanel").classList.toggle("hidden",!isAdmin);
-  if(isAdmin){const {data}=await db.from("site_settings").select("value").eq("key","voting_open").maybeSingle();$("votingToggle").checked=data?.value===true;await loadAdminMembers();}
+  if (isAdmin) {
+  const { data } = await db
+    .from("site_settings")
+    .select("value")
+    .eq("key", "voting_open")
+    .maybeSingle();
+
+  $("votingToggle").checked = data?.value === true;
+
+  await Promise.all([
+    loadAdminMembers(),
+    loadGalleryAdmin()
+  ]);
+}
   return isAdmin;
 }
 $("loginForm").addEventListener("submit",async e=>{e.preventDefault();if(!db)return;const {error}=await db.auth.signInWithPassword({email:$("adminEmail").value,password:$("adminPassword").value});message("loginMessage",error?error.message:"Signed in.",!!error);await requireAdmin();});
@@ -148,8 +365,201 @@ $("adminForm").addEventListener("submit",e=>addDirectoryEntry(e,"admins"));
 $("memberForm").addEventListener("submit",e=>addDirectoryEntry(e,"members"));
 ["adminManagementList","memberManagementList"].forEach(id=>{const box=$(id);if(!box)return;box.addEventListener("click",async e=>{const button=e.target.closest("button[data-action]");if(!button)return;const item=button.closest(".admin-member-item");if(!item)return;const key=item.dataset.directoryKey,state=directoryState[key];if(button.dataset.action==="edit"){item.querySelector(".admin-member-edit").classList.remove("hidden");item.querySelector('input[name="display_name"]').focus();}else if(button.dataset.action==="cancel"){item.querySelector(".admin-member-edit").classList.add("hidden");}else if(button.dataset.action==="delete"){const name=item.querySelector("h4")?.textContent||`this ${state.label}`;if(!confirm(`Delete ${name}? This cannot be undone.`))return;button.disabled=true;const {error}=await db.from(state.table).delete().eq("id",item.dataset.memberId);message("adminMessage",error?.message||`${state.label} deleted.`,!!error);if(error)button.disabled=false;else await Promise.all([loadMembers(),loadAdminMembers()]);}});box.addEventListener("submit",async e=>{const form=e.target.closest(".admin-member-edit");if(!form)return;e.preventDefault();const item=form.closest(".admin-member-item"),key=item.dataset.directoryKey,state=directoryState[key],values=new FormData(form),avatarInput=String(values.get("avatar_url")||"").trim(),avatar=avatarInput?safeUrl(avatarInput):null;if(avatarInput&&!avatar){message("adminMessage","Enter a valid http:// or https:// avatar URL.",true);return;}const updates={display_name:String(values.get("display_name")||"").trim(),handle:String(values.get("handle")||"").trim(),bio:String(values.get("bio")||"").trim(),avatar_url:avatar,visible:form.elements.visible.checked};if(!updates.display_name){message("adminMessage","Display name is required.",true);return;}const save=form.querySelector('button[type="submit"]');save.disabled=true;const {error}=await db.from(state.table).update(updates).eq("id",item.dataset.memberId);message("adminMessage",error?.message||`${state.label} profile updated.`,!!error);save.disabled=false;if(!error)await Promise.all([loadMembers(),loadAdminMembers()]);});});
 $("announcementForm").addEventListener("submit",async e=>{e.preventDefault();const {error}=await db.from("announcements").insert({title:$("announcementTitle").value.trim(),body:$("announcementBody").value.trim(),published:true,is_pinned:$("announcementPinned").checked});message("adminMessage",error?.message||"Announcement published.",!!error);if(!error){e.target.reset();await loadAnnouncements();}});
-$("galleryForm").addEventListener("submit",async e=>{e.preventDefault();const imageUrl=safeUrl($("galleryImageUrl").value.trim());if(!imageUrl){message("adminMessage","Enter a valid direct http:// or https:// image URL.",true);return;}const {error}=await db.from("gallery_images").insert({image_url:imageUrl,caption:$("galleryCaption").value.trim()||null});message("adminMessage",error?.message||"Gallery image added.",!!error);if(!error){e.target.reset();await loadGallery();}});
-$("editionForm").addEventListener("submit",async e=>{
+$("galleryAlbumForm").addEventListener("submit", async e => {
+  e.preventDefault();
+
+  const albumId = $("galleryAlbumId").value;
+  const title = $("galleryAlbumTitle").value.trim();
+
+  const selectedImages = [];
+
+  for (let slot = 1; slot <= 4; slot++) {
+    const rawUrl = $(`galleryImageUrl${slot}`).value.trim();
+    const caption = $(`galleryCaption${slot}`).value.trim();
+
+    if (!rawUrl) {
+      if (caption) {
+        message("adminMessage", `Image ${slot} has a caption but no image URL.`, true);
+        return;
+      }
+      continue;
+    }
+
+    const imageUrl = safeUrl(rawUrl);
+
+    if (!imageUrl) {
+      message("adminMessage", `Image ${slot} needs a valid http:// or https:// URL.`, true);
+      return;
+    }
+
+    selectedImages.push({
+      image_url: imageUrl,
+      caption: caption || null,
+      display_order: slot
+    });
+  }
+
+  if (!selectedImages.length) {
+    message("adminMessage", "Add at least one image to this season.", true);
+    return;
+  }
+
+  const saveButton = $("galleryAlbumSaveButton");
+  saveButton.disabled = true;
+
+  let savedAlbumId = albumId;
+
+  if (albumId) {
+    const { error } = await db
+      .from("gallery_albums")
+      .update({ title })
+      .eq("id", albumId);
+
+    if (error) {
+      message("adminMessage", error.message, true);
+      saveButton.disabled = false;
+      return;
+    }
+  } else {
+    const { data, error } = await db
+      .from("gallery_albums")
+      .insert({ title })
+      .select("id")
+      .single();
+
+    if (error) {
+      message("adminMessage", error.message, true);
+      saveButton.disabled = false;
+      return;
+    }
+
+    savedAlbumId = data.id;
+  }
+
+  const { error: imageSaveError } = await db
+    .from("gallery_album_images")
+    .upsert(
+      selectedImages.map(image => ({
+        ...image,
+        album_id: savedAlbumId
+      })),
+      { onConflict: "album_id,display_order" }
+    );
+
+  if (imageSaveError) {
+    message("adminMessage", imageSaveError.message, true);
+    saveButton.disabled = false;
+    return;
+  }
+
+  const usedSlots = selectedImages.map(image => image.display_order);
+
+  const { data: existingImages, error: existingError } = await db
+    .from("gallery_album_images")
+    .select("id,display_order")
+    .eq("album_id", savedAlbumId);
+
+  if (existingError) {
+    message("adminMessage", existingError.message, true);
+    saveButton.disabled = false;
+    return;
+  }
+
+  const removedIds = (existingImages || [])
+    .filter(image => !usedSlots.includes(image.display_order))
+    .map(image => image.id);
+
+  if (removedIds.length) {
+    const { error: deleteError } = await db
+      .from("gallery_album_images")
+      .delete()
+      .in("id", removedIds);
+
+    if (deleteError) {
+      message("adminMessage", deleteError.message, true);
+      saveButton.disabled = false;
+      return;
+    }
+  }
+
+  message("adminMessage", albumId ? "Season updated." : "Season created.");
+  resetGalleryAlbumForm();
+  saveButton.disabled = false;
+
+  await Promise.all([loadGallery(), loadGalleryAdmin()]);
+});
+
+$("galleryAlbumCancelButton").addEventListener("click", resetGalleryAlbumForm);
+
+$("galleryAdminManagementList").addEventListener("click", async e => {
+  const button = e.target.closest("button[data-action]");
+  if (!button) return;
+
+  const albumRow = button.closest("[data-album-id]");
+  if (!albumRow) return;
+
+  const albumId = albumRow.dataset.albumId;
+
+  if (button.dataset.action === "edit-album") {
+    await editGalleryAlbum(albumId);
+    return;
+  }
+
+  if (button.dataset.action === "delete-album") {
+    const title = albumRow.querySelector("h4")?.textContent || "this season";
+
+    if (!confirm(`Delete ${title} and all its images? This cannot be undone.`)) return;
+
+    button.disabled = true;
+
+    const { error } = await db
+      .from("gallery_albums")
+      .delete()
+      .eq("id", albumId);
+
+    message("adminMessage", error?.message || "Season and its images deleted.", !!error);
+
+    if (!error) {
+      resetGalleryAlbumForm();
+      await Promise.all([loadGallery(), loadGalleryAdmin()]);
+    } else {
+      button.disabled = false;
+    }
+
+    return;
+  }
+
+  if (button.dataset.action === "delete-image") {
+    const imageBox = button.closest("[data-image-id]");
+    const imageId = imageBox?.dataset.imageId;
+
+    if (!imageId) return;
+
+    const albumImages = albumRow.querySelectorAll("[data-image-id]");
+
+    if (albumImages.length <= 1) {
+      message("adminMessage", "A season must keep at least one image. Delete the season if you no longer need it.", true);
+      return;
+    }
+
+    if (!confirm("Delete this image?")) return;
+
+    button.disabled = true;
+
+    const { error } = await db
+      .from("gallery_album_images")
+      .delete()
+      .eq("id", imageId);
+
+    message("adminMessage", error?.message || "Image deleted.", !!error);
+
+    if (!error) {
+      await Promise.all([loadGallery(), loadGalleryAdmin()]);
+    } else {
+      button.disabled = false;
+    }
+  }
+});
   e.preventDefault();
   const payload={title:$("editionTitle").value.trim(),month:Number($("editionMonth").value),year:Number($("editionYear").value),published:false};
   const {error}=await db.from("award_editions").insert(payload);
