@@ -436,53 +436,69 @@ $("galleryAlbumForm").addEventListener("submit", async e => {
     savedAlbumId = data.id;
   }
 
-  const { error: imageSaveError } = await db
+ // Get the images currently saved for this season
+const { data: existingImages, error: existingError } = await db
+  .from("gallery_album_images")
+  .select("id,display_order")
+  .eq("album_id", savedAlbumId);
+
+if (existingError) {
+  message("adminMessage", existingError.message, true);
+  saveButton.disabled = false;
+  return;
+}
+
+// Delete images whose slots are no longer being used
+const usedSlots = selectedImages.map(image => image.display_order);
+
+const removedIds = (existingImages || [])
+  .filter(image => !usedSlots.includes(image.display_order))
+  .map(image => image.id);
+
+if (removedIds.length) {
+  const { error: deleteError } = await db
     .from("gallery_album_images")
-    .upsert(
-      selectedImages.map(image => ({
+    .delete()
+    .in("id", removedIds);
+
+  if (deleteError) {
+    message("adminMessage", deleteError.message, true);
+    saveButton.disabled = false;
+    return;
+  }
+}
+
+// Update existing images or insert new ones
+for (const image of selectedImages) {
+  const existing = (existingImages || []).find(
+    item => item.display_order === image.display_order
+  );
+
+  let result;
+
+  if (existing) {
+    result = await db
+      .from("gallery_album_images")
+      .update({
+        image_url: image.image_url,
+        caption: image.caption
+      })
+      .eq("id", existing.id);
+  } else {
+    result = await db
+      .from("gallery_album_images")
+      .insert({
         ...image,
         album_id: savedAlbumId
-      })),
-      { onConflict: "album_id,display_order" }
-    );
+      });
+  }
 
-  if (imageSaveError) {
-    message("adminMessage", imageSaveError.message, true);
+  if (result.error) {
+    message("adminMessage", result.error.message, true);
     saveButton.disabled = false;
     return;
   }
-
-  const usedSlots = selectedImages.map(image => image.display_order);
-
-  const { data: existingImages, error: existingError } = await db
-    .from("gallery_album_images")
-    .select("id,display_order")
-    .eq("album_id", savedAlbumId);
-
-  if (existingError) {
-    message("adminMessage", existingError.message, true);
-    saveButton.disabled = false;
-    return;
-  }
-
-  const removedIds = (existingImages || [])
-    .filter(image => !usedSlots.includes(image.display_order))
-    .map(image => image.id);
-
-  if (removedIds.length) {
-    const { error: deleteError } = await db
-      .from("gallery_album_images")
-      .delete()
-      .in("id", removedIds);
-
-    if (deleteError) {
-      message("adminMessage", deleteError.message, true);
-      saveButton.disabled = false;
-      return;
-    }
-  }
-
-  message("adminMessage", albumId ? "Season updated." : "Season created.");
+}  message("adminMessage", albumId ? "Season updated." : "Season created.");
   resetGalleryAlbumForm();
   saveButton.disabled = false;
 
