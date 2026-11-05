@@ -68,7 +68,19 @@ function renderDirectory(key) {
 async function loadDirectory(key){const state=directoryState[key],grid=$(state.gridId);const {data,error}=await db.from(state.table).select("id,display_name,handle,bio,avatar_url,created_at").eq("visible",true).order("created_at",{ascending:true});if(error){if(grid)grid.innerHTML=`<p class="muted">Could not load ${state.label} profiles.</p>`;return;}state.rows=data||[];state.visible=DIRECTORY_PAGE_SIZE;renderDirectory(key);}
 async function loadDirectoryManagement(key){const state=directoryState[key],container=$(state.managementId);if(!container||!db)return;const {data,error}=await db.from(state.table).select("id,display_name,handle,bio,avatar_url,visible,created_at").order("created_at",{ascending:true});if(error){container.innerHTML=`<p class="muted">Could not load ${state.label}s: ${escapeHtml(error.message)}</p>`;return;}if(!data?.length){container.innerHTML=`<p class="muted">No ${state.label} profiles have been added yet.</p>`;return;}
 container.innerHTML=data.map(m=>`<div class="admin-member-item" data-directory-key="${key}" data-member-id="${escapeHtml(m.id)}"><div class="admin-member-row"><div class="admin-member-summary">${m.avatar_url&&safeUrl(m.avatar_url)?`<img class="avatar" src="${escapeHtml(safeUrl(m.avatar_url))}" alt="">`:`<div class="avatar">${escapeHtml((m.display_name||"?").slice(0,1).toUpperCase())}</div>`}<div><h4>${escapeHtml(m.display_name)}</h4><div class="handle">${escapeHtml(m.handle||"")}</div><div class="fine-print">${m.visible?"Visible in public directory":"Hidden from public directory"}</div></div></div><div class="admin-member-actions"><button type="button" class="button secondary small" data-action="edit">Edit</button><button type="button" class="button secondary small" data-action="delete">Delete</button></div></div><form class="admin-member-edit hidden"><label>Display name<input name="display_name" required maxlength="100" value="${escapeHtml(m.display_name||"")}"></label><label>Handle<input name="handle" maxlength="100" value="${escapeHtml(m.handle||"")}"></label><label>Short bio<textarea name="bio" maxlength="500">${escapeHtml(m.bio||"")}</textarea></label><label>Avatar image URL<input name="avatar_url" type="url" placeholder="https://..." value="${escapeHtml(m.avatar_url||"")}"></label><label class="switch-line"><input name="visible" type="checkbox" ${m.visible?"checked":""}> Show in public directory</label><div class="admin-member-edit-actions"><button type="submit" class="button primary small">Save changes</button><button type="button" class="button secondary small" data-action="cancel">Cancel</button></div></form></div>`).join("");}
-async function loadMembers(){await Promise.all([loadDirectory("admins"),loadDirectory("members")]);}
+async function loadMembers() {
+  await Promise.all([
+    loadDirectory("admins"),
+    loadDirectory("members")
+  ]);
+
+  const { data, error } = await db.rpc("get_directory_counts");
+
+  if (error || !data?.length) return;
+
+  $("adminCount").textContent = `(${data[0].admin_count})`;
+  $("memberCount").textContent = `(${data[0].member_count})`;
+}
 async function loadAdminMembers(){await Promise.all([loadDirectoryManagement("admins"),loadDirectoryManagement("members")]);}
 
 async function loadAnnouncements() {
