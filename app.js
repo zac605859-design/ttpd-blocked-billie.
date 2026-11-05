@@ -15,7 +15,7 @@ function message(id, text, error=false) {
   const el = $(id); if (el) { el.textContent = text; el.style.color = error ? "#a12d43" : "#42664c"; }
 }
 function unavailable() {
-  ["categories","winnerSeasonOptions","adminGrid","memberGrid","announcements","galleryAlbumsgrid"].forEach(id => { if ($(id)) $(id).innerHTML = '<p class="muted">Connect Supabase to load this section. See README.md.</p>'; });
+  ["categories","winnerSeasonOptions","adminGrid","memberGrid","announcements","galleryAlbumsGrid"].forEach(id => { if ($(id)) $(id).innerHTML = '<p class="muted">Connect Supabase to load this section. See README.md.</p>'; });
   $("votingStatus").textContent = "Setup required";
 }
 async function loadPublic() {
@@ -560,6 +560,7 @@ $("galleryAdminManagementList").addEventListener("click", async e => {
     }
   }
 });
+$("editionForm").addEventListener("submit",async e=>{
   e.preventDefault();
   const payload={title:$("editionTitle").value.trim(),month:Number($("editionMonth").value),year:Number($("editionYear").value),published:false};
   const {error}=await db.from("award_editions").insert(payload);
