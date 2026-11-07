@@ -744,7 +744,108 @@ async function loadEventManagement() {
     if (!deleteError) { await loadEventManagement(); await loadHomepageEvent(); }
   });
 }
+// --- Public community Events and Scoreboard ---
 
+async function loadCommunityEvents() {
+  const box = $("eventsGrid");
+  if (!box || !db) return;
+
+  const { data: events, error } = await db
+    .from("events")
+    .select("id,title,description,event_date")
+    .eq("published", true)
+    .order("event_date", { ascending: false });
+
+  if (error) {
+    box.innerHTML = `<p class="muted">Could not load events: ${escapeHtml(error.message)}</p>`;
+    return;
+  }
+
+  if (!events?.length) {
+    box.innerHTML = '<p class="muted">No community events have been published yet.</p>';
+    return;
+  }
+
+  const { data: winners, error: winnerError } = await db
+    .from("event_winners")
+    .select("event_id,category_name,winner_name")
+    .in("event_id", events.map(event => event.id));
+
+  if (winnerError) {
+    box.innerHTML = `<p class="muted">Could not load event results: ${escapeHtml(winnerError.message)}</p>`;
+    return;
+  }
+
+  box.innerHTML = events.map(event => {
+    const rows = (winners || []).filter(w => w.event_id === event.id);
+
+    return `
+      <article class="event-result-card">
+        <div class="eyebrow">
+          ${event.event_date ? escapeHtml(new Date(event.event_date + "T00:00:00").toLocaleDateString()) : "Community event"}
+        </div>
+        <h3>${escapeHtml(event.title)}</h3>
+        ${event.description ? `<p>${escapeHtml(event.description)}</p>` : ""}
+        ${rows.length
+          ? `<div class="winner-list">
+              ${rows.map(w => `
+                <article class="winner-row">
+                  <strong>${escapeHtml(w.category_name)}</strong>
+                  <span>${escapeHtml(w.winner_name)}</span>
+                </article>
+              `).join("")}
+            </div>`
+          : '<p class="muted">Results have not been added yet.</p>'}
+      </article>
+    `;
+  }).join("");
+}
+
+async function loadCommunityScoreboard() {
+  const box = $("scoreboardGrid");
+  if (!box || !db) return;
+
+  const { data, error } = await db
+    .from("event_winners")
+    .select("winner_name");
+
+  if (error) {
+    box.innerHTML = `<p class="muted">Could not load scoreboard: ${escapeHtml(error.message)}</p>`;
+    return;
+  }
+
+  const rankings = new Map();
+
+  (data || []).forEach(row => {
+    const name = String(row.winner_name || "").trim();
+    if (!name) return;
+
+    const key = name.toLowerCase();
+
+    if (!rankings.has(key)) {
+      rankings.set(key, { name, wins: 0 });
+    }
+
+    rankings.get(key).wins++;
+  });
+
+  const sorted = [...rankings.values()].sort(
+    (a, b) => b.wins - a.wins || a.name.localeCompare(b.name)
+  );
+
+  if (!sorted.length) {
+    box.innerHTML = '<p class="muted">The scoreboard will appear when published event winners are added.</p>';
+    return;
+  }
+
+  box.innerHTML = sorted.map((person, index) => `
+    <article class="scoreboard-row">
+      <strong class="scoreboard-rank">#${index + 1}</strong>
+      <span class="scoreboard-name">${escapeHtml(person.name)}</span>
+      <strong class="scoreboard-wins">${person.wins} ${person.wins === 1 ? "win" : "wins"}</strong>
+    </article>
+  `).join("");
+}
 async function loadHomepageEvent() {
   const section = $("eventCountdownSection");
   if (!section || !db) return;
@@ -880,7 +981,12 @@ requireAdmin = async function() {
 const originalLoadPublic = loadPublic;
 loadPublic = async function() {
   await originalLoadPublic();
-  await loadHomepageEvent();
+
+  await Promise.all([
+    loadHomepageEvent(),
+    loadCommunityEvents(),
+    loadCommunityScoreboard()
+  ]);
 };
 // Category and nominee edit/delete actions
 
