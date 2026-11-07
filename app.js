@@ -37,7 +37,7 @@ async function loadVoting() {
   $("votingStatus").textContent = isOpen ? "VOTING OPEN" : "VOTING CLOSED";
   $("votingClosed").classList.toggle("hidden", isOpen);
   $("ballotForm").classList.toggle("hidden", !isOpen);
-  const {data, error} = await db.from("categories").select("id,name,nominees(id,name)").eq("active",true).order("created_at", { ascending: true });
+  const {data, error} = await db.from("categories").select("id,name,nominees(id,name)").eq("active",true).order("sort_order");
   if (error) { $("categories").innerHTML = '<p class="muted">Could not load categories.</p>'; return; }
   categoryCache = data || [];
   $("categories").innerHTML = categoryCache.length ? categoryCache.map(c => `<article class="category-card"><h3>${escapeHtml(c.name)}</h3>${(c.nominees||[]).map(n=>`<label class="nominee"><input type="radio" name="category-${c.id}" value="${n.id}" required><span>${escapeHtml(n.name)}</span></label>`).join("") || '<p class="muted">No nominees added yet.</p>'}</article>`).join("") : '<p class="muted">No active categories yet.</p>';
@@ -346,8 +346,7 @@ async function loadCategoryManagement() {
   const { data, error } = await db
     .from("categories")
     .select("id,name,active,sort_order")
-    .order("sort_order")
-    .order("name");
+    .order("sort_order");
 
   if (error) {
     box.innerHTML = `<p class="muted">Could not load categories: ${escapeHtml(error.message)}</p>`;
@@ -392,8 +391,8 @@ async function loadNomineeManagement() {
 
   const [{ data: nominees, error }, { data: categories, error: categoryError }] =
     await Promise.all([
-      db.from("nominees").select("id,name,category_id").order("name"),
-      db.from("categories").select("id,name").order("name")
+      db.from("nominees").select("id,name,category_id").order("created_at"),
+      db.from("categories").select("id,name").order("sort_order")
     ]);
 
   if (error || categoryError) {
