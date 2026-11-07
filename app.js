@@ -20,7 +20,16 @@ function unavailable() {
 }
 async function loadPublic() {
   if (!db) return unavailable();
-  await Promise.all([loadVoting(), loadWinners(), loadMembers(), loadAnnouncements(), loadGallery()]);
+
+  await Promise.all([
+    loadVoting(),
+    loadWinners(),
+    loadMembers(),
+    loadAnnouncements(),
+    loadGallery(),
+    loadCommunityEvents(),
+    loadCommunityScoreboard()
+  ]);
 }
 async function loadVoting() {
   const {data: setting} = await db.from("site_settings").select("value").eq("key","voting_open").maybeSingle();
@@ -977,16 +986,6 @@ requireAdmin = async function() {
   loadNomineeManagement()
 ]);
   return isAdmin;
-};
-const originalLoadPublic = loadPublic;
-loadPublic = async function() {
-  await originalLoadPublic();
-
-  await Promise.all([
-    loadHomepageEvent(),
-    loadCommunityEvents(),
-    loadCommunityScoreboard()
-  ]);
 };
 // Category and nominee edit/delete actions
 
