@@ -16,7 +16,14 @@
     </a>
     <button class="menu-toggle" id="menuToggle" aria-label="Toggle navigation">☰</button>
     <nav id="mainNav">
-      <a href="#vote">Voting</a><a href="#winners">Winners</a><a href="#admins">Admins</a><a href="#members">Members</a><a href="#newsletter">News</a><a href="#gallery">Gallery</a>
+      <a href="#vote">Voting</a>
+<a href="#winners">Winners</a>
+<a href="#events">Events</a>
+<a href="#scoreboard">Scoreboard</a>
+<a href="#admins">Admins</a>
+<a href="#members">Members</a>
+<a href="#newsletter">News</a>
+<a href="#gallery">Gallery</a>
       <a class="admin-link" href="#admin">Admin</a>
     </nav>
   </header>
@@ -28,9 +35,10 @@
       <div class="eyebrow"></div>
       <h1><span class="welcome-text">Welcome to</span><br><em>TTPD BLOCKED BILLIE WEB</em></h1>
       <p>Official website for everything.</p>
-      <div class="hero-actions">
+      <div class="event countdown">
   <a class="button primary" href="#vote">Voting</a>
-  <a class="button secondary" href="#winners">Winners</a>
+  <a class="button secondary" href="#winners">Winners</a><a class="button secondary" href="#events">Events</a>
+<a class="button secondary" href="#scoreboard">Scoreboard</a>
   <a class="button secondary" href="#admins">Admins</a>
   <a class="button secondary" href="#members">Members</a>
   <a class="button secondary" href="#newsletter">News</a>
@@ -53,7 +61,39 @@
       <div class="section-heading"><div><div class="eyebrow"></div><h2>Results & previous winners</h2></div><span class="section-aside">Published by admins</span></div>
       <p class="section-intro">Browse the winners and results from past award editions.</p>
       <div id="winnerSeasonOptions" class="winner-season-options"><p class="muted">Loading seasons…</p></div><div id="winnerSeasonResults" class="winner-season-results" aria-live="polite"><p class="muted">Select a season to view its winners.</p></div>
-    </section>
+    </section><!-- EVENTS ARCHIVE -->
+<section class="section" id="events">
+  <div class="section-heading">
+    <div>
+      <div class="eyebrow">COMMUNITY EVENTS</div>
+      <h2>EVENT RESULTS</h2>
+    </div>
+    <span class="section-aside">Published by admins</span>
+  </div>
+  <p class="section-intro">
+    Browse results from our community events.
+  </p>
+  <div id="eventsGrid" class="event-grid">
+    <p class="muted">Loading events…</p>
+  </div>
+</section>
+
+<!-- COMMUNITY SCOREBOARD -->
+<section class="section dark-section" id="scoreboard">
+  <div class="section-heading">
+    <div>
+      <div class="eyebrow">ALL-TIME RANKINGS</div>
+      <h2>COMMUNITY SCOREBOARD</h2>
+    </div>
+    <span class="section-aside">Most awards won</span>
+  </div>
+  <p class="section-intro">
+    Members ranked by the total number of event awards they have won.
+  </p>
+  <div id="scoreboardGrid" class="scoreboard-grid">
+    <p class="muted">Loading scoreboard…</p>
+  </div>
+</section>
 
     <section class="section" id="admins">
       <div class="section-heading"><div><div class="eyebrow"></div><h2>ADMINS <span id="adminCount">(0)</span></h2></div><span class="section-aside"></span></div>
@@ -118,7 +158,19 @@
         <div class="admin-grid">
           <div class="admin-card"><h3>Voting controls</h3><label class="switch-line"><input type="checkbox" id="votingToggle"> Voting is open</label><button class="button secondary small" id="refreshData">Refresh public site</button></div>
           <div class="admin-card"><h3>Add a category</h3><form id="categoryForm"><input id="newCategory" placeholder="Category name" required><button class="button secondary small">Add category</button></form></div>
-          <div class="admin-card"><h3>Add a nominee</h3><form id="nomineeForm"><select id="nomineeCategory" required></select><input id="newNominee" placeholder="Nominee name / @handle" required><button class="button secondary small">Add nominee</button></form></div>
+          <div class="admin-card"><h3>Add a nominee</h3><form id="nomineeForm"><select id="nomineeCategory" required></select><input id="newNominee" placeholder="Nominee name / @handle" required><button class="button secondary small">Add nominee</button></form></div><div class="admin-card admin-wide">
+  <h3>Manage voting categories</h3>
+  <div id="categoryManagementList" class="admin-management-list">
+    <p class="muted">Loading categories…</p>
+  </div>
+</div>
+
+<div class="admin-card admin-wide">
+  <h3>Manage nominees</h3>
+  <div id="nomineeManagementList" class="admin-management-list">
+    <p class="muted">Loading nominees…</p>
+  </div>
+</div>
           <div class="admin-card"><h3>Add an admin</h3><form id="adminForm"><input id="adminName" placeholder="Display name" required><input id="adminHandle" placeholder="@handle"><input id="adminBio" placeholder="Short bio"><input id="adminAvatar" placeholder="Avatar image URL (optional)"><button class="button secondary small">Add admin</button></form></div>
           <div class="admin-card member-management-card"><h3>Manage admins</h3><div id="adminManagementList" class="member-management-list"><p class="muted">Sign in to load admins.</p></div></div>
           <div class="admin-card"><h3>Add a member</h3><form id="memberForm"><input id="memberName" placeholder="Display name" required><input id="memberHandle" placeholder="@handle"><input id="memberBio" placeholder="Short bio"><input id="memberAvatar" placeholder="Avatar image URL (optional)"><button class="button secondary small">Add member</button></form></div>
@@ -180,7 +232,32 @@
   </div>
 </div>
           <div class="admin-card admin-wide"><h3>Manage seasons and winners</h3><div id="winnerManagementList" class="admin-management-list"></div><p class="fine-print">Select a draft or published season, then add each category and its winner. You can edit or delete entries below.</p><form id="winnerEntryForm"><select id="winnerEntrySeason" required></select><input id="winnerEntryCategory" placeholder="Category name" required><input id="winnerEntryName" placeholder="Winner name / @handle" required><button class="button secondary small">Add winner</button></form></div>
-          <div class="admin-card admin-wide"><h3>Homepage event countdown</h3><form id="eventForm"><input id="eventTitleInput" placeholder="Event title" required><textarea id="eventDescriptionInput" placeholder="Event description"></textarea><label>Event date and time<input id="eventDateTimeInput" type="datetime-local" required></label><button class="button secondary small">Save countdown</button></form><div id="eventManagement"></div></div>
+          <div class="admin-card admin-wide"><h3>Homepage event countdown</h3><form id="eventForm"><input id="eventTitleInput" placeholder="Event title" required><textarea id="eventDescriptionInput" placeholder="Event description"></textarea><label>Event date and time<input id="eventDateTimeInput" type="datetime-local" required></label><button class="button secondary small">Save countdown</button></form><div id="eventManagement"></div></div><div class="admin-card admin-wide">
+  <h3>Create a community event</h3>
+  <form id="communityEventForm">
+    <input id="communityEventTitle" placeholder="Event title" required>
+    <textarea id="communityEventDescription" placeholder="Event description"></textarea>
+    <label>
+      Event date
+      <input id="communityEventDate" type="date">
+    </label>
+    <button class="button secondary small" type="submit">Create event</button>
+  </form>
+  <div id="eventManagementList" class="admin-management-list"></div>
+</div>
+
+<div class="admin-card admin-wide">
+  <h3>Add event winners</h3>
+  <form id="eventWinnerForm">
+    <select id="eventWinnerEvent" required>
+      <option value="">Select event</option>
+    </select>
+    <input id="eventWinnerCategory" placeholder="Category (e.g. Best Album)" required>
+    <input id="eventWinnerName" placeholder="Winner name / @handle" required>
+    <button class="button secondary small" type="submit">Add winner</button>
+  </form>
+  <div id="eventWinnerManagementList" class="admin-management-list"></div>
+</div>
           <div class="admin-card"><h3>Publish award edition</h3><form id="editionForm"><input id="editionTitle" placeholder="Season title (e.g. Season 4 Awards)" required><select id="editionMonth" required><option value="">Month</option><option value="1">January</option><option value="2">February</option><option value="3">March</option><option value="4">April</option><option value="5">May</option><option value="6">June</option><option value="7">July</option><option value="8">August</option><option value="9">September</option><option value="10">October</option><option value="11">November</option><option value="12">December</option></select><input id="editionYear" type="number" min="2000" max="2100" placeholder="Year" required><button class="button secondary small">Create draft season</button></form><p class="fine-print">Create the season here, add its category winners in Manage seasons and winners, then use Publish on that season. Draft seasons stay hidden from the public Winners page.</p></div>
         </div>
         <p id="adminMessage" class="form-message" role="status"></p>
