@@ -330,7 +330,106 @@ $("ballotForm").addEventListener("submit",async e=>{
   message("voteMessage",error?(error.message.includes("duplicate")?"A ballot has already been submitted from this browser.":error.message):"Ballot submitted.",!!error);
   if(!error)$("submitBallot").disabled=true;
 });
+async function loadCategoryManagement() {
+  const box = $("categoryManagementList");
+  if (!box || !db) return;
 
+  const { data, error } = await db
+    .from("categories")
+    .select("id,name,active,sort_order")
+    .order("sort_order")
+    .order("name");
+
+  if (error) {
+    box.innerHTML = `<p class="muted">Could not load categories: ${escapeHtml(error.message)}</p>`;
+    return;
+  }
+
+  if (!data?.length) {
+    box.innerHTML = '<p class="muted">No categories found.</p>';
+    return;
+  }
+
+  box.innerHTML = data.map(c => `
+    <article class="admin-management-item" data-category-id="${escapeHtml(c.id)}">
+      <div class="admin-management-head">
+        <div>
+          <h4>${escapeHtml(c.name)}</h4>
+          <small class="fine-print">${c.active ? "Active" : "Inactive"}</small>
+        </div>
+        <div class="admin-management-actions">
+          <button type="button" class="button secondary small" data-action="edit-category">Edit</button>
+          <button type="button" class="button secondary small" data-action="delete-category">Delete</button>
+        </div>
+      </div>
+      <form class="admin-edit-form hidden">
+        <input name="name" required maxlength="120" value="${escapeHtml(c.name)}">
+        <label class="switch-line">
+          <input name="active" type="checkbox" ${c.active ? "checked" : ""}>
+          Active for voting
+        </label>
+        <div class="admin-management-actions">
+          <button type="submit" class="button primary small">Save changes</button>
+          <button type="button" class="button secondary small" data-action="cancel-edit">Cancel</button>
+        </div>
+      </form>
+    </article>
+  `).join("");
+}
+
+async function loadNomineeManagement() {
+  const box = $("nomineeManagementList");
+  if (!box || !db) return;
+
+  const [{ data: nominees, error }, { data: categories, error: categoryError }] =
+    await Promise.all([
+      db.from("nominees").select("id,name,category_id").order("name"),
+      db.from("categories").select("id,name").order("name")
+    ]);
+
+  if (error || categoryError) {
+    box.innerHTML = `<p class="muted">Could not load nominees: ${escapeHtml((error || categoryError).message)}</p>`;
+    return;
+  }
+
+  if (!nominees?.length) {
+    box.innerHTML = '<p class="muted">No nominees found.</p>';
+    return;
+  }
+
+  box.innerHTML = nominees.map(n => {
+    const category = categories.find(c => c.id === n.category_id);
+
+    return `
+      <article class="admin-management-item" data-nominee-id="${escapeHtml(n.id)}">
+        <div class="admin-management-head">
+          <div>
+            <h4>${escapeHtml(n.name)}</h4>
+            <small class="fine-print">${escapeHtml(category?.name || "Unknown category")}</small>
+          </div>
+          <div class="admin-management-actions">
+            <button type="button" class="button secondary small" data-action="edit-nominee">Edit</button>
+            <button type="button" class="button secondary small" data-action="delete-nominee">Delete</button>
+          </div>
+        </div>
+        <form class="admin-edit-form hidden">
+          <input name="name" required maxlength="120" value="${escapeHtml(n.name)}">
+          <select name="category_id" required>
+            ${categories.map(c => `
+              <option value="${escapeHtml(c.id)}" ${c.id === n.category_id ? "selected" : ""}>
+                ${escapeHtml(c.name)}
+              </option>
+            `).join("")}
+          </select>
+          <div class="admin-management-actions">
+            <button type="submit" class="button primary small">Save changes</button>
+            <button type="button" class="button secondary small" data-action="cancel-edit">Cancel</button>
+          </div>
+        </form>
+      </article>
+    `;
+  }).join("");
+}
 async function requireAdmin() {
   const {data:{session}}=await db.auth.getSession();
   const isAdmin=session?.user?.app_metadata?.role==="admin";
@@ -769,7 +868,13 @@ $("eventForm")?.addEventListener("submit",async e=>{
 const originalRequireAdmin = requireAdmin;
 requireAdmin = async function() {
   const isAdmin = await originalRequireAdmin();
-  if (isAdmin) await Promise.all([loadAnnouncementManagement(),loadWinnerManagement(),loadEventManagement()]);
+  if (isAdmin) await Promise.all([
+  loadAnnouncementManagement(),
+  loadWinnerManagement(),
+  loadEventManagement(),
+  loadCategoryManagement(),
+  loadNomineeManagement()
+]);
   return isAdmin;
 };
 const originalLoadPublic = loadPublic;
