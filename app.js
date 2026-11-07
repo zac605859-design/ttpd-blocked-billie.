@@ -882,5 +882,132 @@ loadPublic = async function() {
   await originalLoadPublic();
   await loadHomepageEvent();
 };
+// Category and nominee edit/delete actions
 
+["categoryManagementList", "nomineeManagementList"].forEach(id => {
+  const box = $(id);
+  if (!box) return;
+
+  box.addEventListener("click", async e => {
+    const button = e.target.closest("button[data-action]");
+    if (!button) return;
+
+    const item = button.closest("[data-category-id], [data-nominee-id]");
+    if (!item) return;
+
+    const form = item.querySelector("form");
+    const action = button.dataset.action;
+
+    if (action === "edit-category" || action === "edit-nominee") {
+      form.classList.remove("hidden");
+      form.querySelector("input[name='name']").focus();
+      return;
+    }
+
+    if (action === "cancel-edit") {
+      form.classList.add("hidden");
+      return;
+    }
+
+    if (action === "delete-category") {
+      const name = item.querySelector("h4")?.textContent || "this category";
+
+      if (!confirm(
+        `Delete ${name}? Its nominees and associated votes may also be permanently deleted. This cannot be undone.`
+      )) return;
+
+      const { error } = await db
+        .from("categories")
+        .delete()
+        .eq("id", item.dataset.categoryId);
+
+      message("adminMessage", error?.message || "Category deleted.", !!error);
+
+      if (!error) {
+        await Promise.all([
+          loadVoting(),
+          loadCategoryManagement(),
+          loadNomineeManagement()
+        ]);
+      }
+      return;
+    }
+
+    if (action === "delete-nominee") {
+      const name = item.querySelector("h4")?.textContent || "this nominee";
+
+      if (!confirm(
+        `Delete ${name}? Associated votes may also be permanently deleted. This cannot be undone.`
+      )) return;
+
+      const { error } = await db
+        .from("nominees")
+        .delete()
+        .eq("id", item.dataset.nomineeId);
+
+      message("adminMessage", error?.message || "Nominee deleted.", !!error);
+
+      if (!error) {
+        await Promise.all([
+          loadVoting(),
+          loadNomineeManagement()
+        ]);
+      }
+    }
+  });
+
+  box.addEventListener("submit", async e => {
+    const form = e.target.closest(".admin-edit-form");
+    if (!form) return;
+
+    e.preventDefault();
+
+    const item = form.closest("[data-category-id], [data-nominee-id]");
+    const values = new FormData(form);
+    const name = String(values.get("name") || "").trim();
+
+    if (!name) {
+      message("adminMessage", "Name is required.", true);
+      return;
+    }
+
+    const isCategory = item.hasAttribute("data-category-id");
+
+    const updates = isCategory
+      ? {
+          name,
+          active: form.elements.active.checked
+        }
+      : {
+          name,
+          category_id: String(values.get("category_id") || "")
+        };
+
+    const saveButton = form.querySelector("button[type='submit']");
+    saveButton.disabled = true;
+
+    const result = await db
+      .from(isCategory ? "categories" : "nominees")
+      .update(updates)
+      .eq("id", isCategory
+        ? item.dataset.categoryId
+        : item.dataset.nomineeId);
+
+    message(
+      "adminMessage",
+      result.error?.message || (isCategory ? "Category updated." : "Nominee updated."),
+      !!result.error
+    );
+
+    saveButton.disabled = false;
+
+    if (!result.error) {
+      await Promise.all([
+        loadVoting(),
+        loadCategoryManagement(),
+        loadNomineeManagement()
+      ]);
+    }
+  });
+});
 if (db) { loadHomepageEvent(); requireAdmin(); }
