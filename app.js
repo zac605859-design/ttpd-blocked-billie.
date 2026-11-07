@@ -37,7 +37,7 @@ async function loadVoting() {
   $("votingStatus").textContent = isOpen ? "VOTING OPEN" : "VOTING CLOSED";
   $("votingClosed").classList.toggle("hidden", isOpen);
   $("ballotForm").classList.toggle("hidden", !isOpen);
-  const {data, error} = await db.from("categories").select("id,name,nominees(id,name)").eq("active",true).order("sort_order").order("name");
+  const {data, error} = await db.from("categories").select("id,name,nominees(id,name)").eq("active",true).order("created_at", { ascending: true });
   if (error) { $("categories").innerHTML = '<p class="muted">Could not load categories.</p>'; return; }
   categoryCache = data || [];
   $("categories").innerHTML = categoryCache.length ? categoryCache.map(c => `<article class="category-card"><h3>${escapeHtml(c.name)}</h3>${(c.nominees||[]).map(n=>`<label class="nominee"><input type="radio" name="category-${c.id}" value="${n.id}" required><span>${escapeHtml(n.name)}</span></label>`).join("") || '<p class="muted">No nominees added yet.</p>'}</article>`).join("") : '<p class="muted">No active categories yet.</p>';
