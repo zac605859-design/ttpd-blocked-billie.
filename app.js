@@ -494,6 +494,9 @@ $("nomineeForm").addEventListener("submit", async e => {
     $("nomineeCategory").value = selectedCategory;
   }
 });
+    $("nomineeCategory").value = selectedCategory;
+  }
+});
 async function addDirectoryEntry(e,key){e.preventDefault();const prefix=key==="admins"?"admin":"member",state=directoryState[key],avatarInput=$(prefix+"Avatar").value.trim(),avatar=avatarInput?safeUrl(avatarInput):null;if(avatarInput&&!avatar){message("adminMessage","Enter a valid http:// or https:// avatar URL.",true);return;}const {error}=await db.from(state.table).insert({display_name:$(prefix+"Name").value.trim(),handle:$(prefix+"Handle").value.trim(),bio:$(prefix+"Bio").value.trim(),avatar_url:avatar});message("adminMessage",error?.message||`${state.label} profile added.`,!!error);if(!error){e.target.reset();await Promise.all([loadMembers(),loadAdminMembers()]);}}
 $("adminForm").addEventListener("submit",e=>addDirectoryEntry(e,"admins"));
 $("memberForm").addEventListener("submit",e=>addDirectoryEntry(e,"members"));
