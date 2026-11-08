@@ -41,7 +41,16 @@ async function loadVoting() {
   if (error) { $("categories").innerHTML = '<p class="muted">Could not load categories.</p>'; return; }
   categoryCache = data || [];
   $("categories").innerHTML = categoryCache.length ? categoryCache.map(c => `<article class="category-card"><h3>${escapeHtml(c.name)}</h3>${(c.nominees||[]).map(n=>`<label class="nominee"><input type="radio" name="category-${c.id}" value="${n.id}" required><span>${escapeHtml(n.name)}</span></label>`).join("") || '<p class="muted">No nominees added yet.</p>'}</article>`).join("") : '<p class="muted">No active categories yet.</p>';
-  $("nomineeCategory").innerHTML = categoryCache.map(c=>`<option value="${c.id}">${escapeHtml(c.name)}</option>`).join("");
+  const nomineeCategory = $("nomineeCategory");
+const previousCategory = nomineeCategory.value;
+
+nomineeCategory.innerHTML = categoryCache.map(c =>
+  `<option value="${c.id}">${escapeHtml(c.name)}</option>`
+).join("");
+
+if (categoryCache.some(c => c.id === previousCategory)) {
+  nomineeCategory.value = previousCategory;
+}
 }
 async function loadWinners() {
   const {data: editions, error} = await db.from("award_editions").select("id,title,month,year").eq("published",true).order("year",{ascending:true}).order("month",{ascending:true}).order("created_at",{ascending:true});
