@@ -466,7 +466,25 @@ $("refreshData").addEventListener("click",loadPublic);
 $("loadMoreAdmins").addEventListener("click",()=>{directoryState.admins.visible+=DIRECTORY_PAGE_SIZE;renderDirectory("admins");});
 $("loadMoreMembers").addEventListener("click",()=>{directoryState.members.visible+=DIRECTORY_PAGE_SIZE;renderDirectory("members");});
 $("categoryForm").addEventListener("submit",async e=>{e.preventDefault();const {error}=await db.from("categories").insert({name:$("newCategory").value.trim()});message("adminMessage",error?.message||"Category added.",!!error);e.target.reset();await loadVoting();});
-$("nomineeForm").addEventListener("submit",async e=>{e.preventDefault();const {error}=await db.from("nominees").insert({category_id:$("nomineeCategory").value,name:$("newNominee").value.trim()});message("adminMessage",error?.message||"Nominee added.",!!error);e.target.reset();await loadVoting();});
+$("nomineeForm").addEventListener("submit", async e => {
+  e.preventDefault();
+
+  const selectedCategory = $("nomineeCategory").value;
+  const nomineeName = $("newNominee").value.trim();
+
+  const { error } = await db.from("nominees").insert({
+    category_id: selectedCategory,
+    name: nomineeName
+  });
+
+  message("adminMessage", error?.message || "Nominee added.", !!error);
+
+  if (!error) {
+    $("newNominee").value = "";
+    await loadVoting();
+    $("nomineeCategory").value = selectedCategory;
+  }
+});
 async function addDirectoryEntry(e,key){e.preventDefault();const prefix=key==="admins"?"admin":"member",state=directoryState[key],avatarInput=$(prefix+"Avatar").value.trim(),avatar=avatarInput?safeUrl(avatarInput):null;if(avatarInput&&!avatar){message("adminMessage","Enter a valid http:// or https:// avatar URL.",true);return;}const {error}=await db.from(state.table).insert({display_name:$(prefix+"Name").value.trim(),handle:$(prefix+"Handle").value.trim(),bio:$(prefix+"Bio").value.trim(),avatar_url:avatar});message("adminMessage",error?.message||`${state.label} profile added.`,!!error);if(!error){e.target.reset();await Promise.all([loadMembers(),loadAdminMembers()]);}}
 $("adminForm").addEventListener("submit",e=>addDirectoryEntry(e,"admins"));
 $("memberForm").addEventListener("submit",e=>addDirectoryEntry(e,"members"));
