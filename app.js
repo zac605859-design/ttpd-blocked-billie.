@@ -813,9 +813,25 @@ async function loadCommunityScoreboard() {
   const box = $("scoreboardGrid");
   if (!box || !db) return;
 
+  const { data: editions, error: editionError } = await db
+    .from("award_editions")
+    .select("id")
+    .eq("published", true);
+
+  if (editionError) {
+    box.innerHTML = `<p class="muted">Could not load seasons: ${escapeHtml(editionError.message)}</p>`;
+    return;
+  }
+
+  if (!editions?.length) {
+    box.innerHTML = '<p class="muted">No published winners yet.</p>';
+    return;
+  }
+
   const { data, error } = await db
-    .from("event_winners")
-    .select("winner_name");
+    .from("winner_entries")
+    .select("edition_id, nominee_name")
+    .in("edition_id", editions.map(e => e.id));
 
   if (error) {
     box.innerHTML = `<p class="muted">Could not load scoreboard: ${escapeHtml(error.message)}</p>`;
@@ -825,13 +841,23 @@ async function loadCommunityScoreboard() {
   const rankings = new Map();
 
   (data || []).forEach(row => {
-    const name = String(row.winner_name || "").trim();
-    if (!name) return;
+    const entry = String(row.nominee_name || "").trim();
+    if (!entry) return;
 
-    const key = name.toLowerCase();
+    const parts = entry.split("/");
+    const displayName = parts[0].trim();
+    const handle = parts.length > 1
+      ? parts.slice(1).join("/").trim()
+      : displayName;
+
+    const key = handle.toLowerCase();
 
     if (!rankings.has(key)) {
-      rankings.set(key, { name, wins: 0 });
+      rankings.set(key, {
+        name: displayName,
+        handle,
+        wins: 0
+      });
     }
 
     rankings.get(key).wins++;
@@ -842,17 +868,29 @@ async function loadCommunityScoreboard() {
   );
 
   if (!sorted.length) {
-    box.innerHTML = '<p class="muted">The scoreboard will appear when published event winners are added.</p>';
+    box.innerHTML = '<p class="muted">No winner records found yet.</p>';
     return;
   }
 
-  box.innerHTML = sorted.map((person, index) => `
-    <article class="scoreboard-row">
-      <strong class="scoreboard-rank">#${index + 1}</strong>
-      <span class="scoreboard-name">${escapeHtml(person.name)}</span>
-      <strong class="scoreboard-wins">${person.wins} ${person.wins === 1 ? "win" : "wins"}</strong>
-    </article>
-  `).join("");
+  let previousWins = null;
+  let rank = 0;
+
+  box.innerHTML = sorted.map((person, index) => {
+    if (person.wins !== previousWins) {
+      rank = index + 1;
+      previousWins = person.wins;
+    }
+
+    return `
+      <article class="scoreboard-row">
+        <strong class="scoreboard-rank">#${rank}</strong>
+        <span class="scoreboard-name">${escapeHtml(person.name)}</span>
+        <strong class="scoreboard-wins">
+          ${person.wins} ${person.wins === 1 ? "win" : "wins"}
+        </strong>
+      </article>
+    `;
+  }).join("");
 }
 async function loadHomepageEvent() {
   const section = $("eventCountdownSection");
