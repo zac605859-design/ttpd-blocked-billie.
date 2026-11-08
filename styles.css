@@ -406,3 +406,80 @@
     align-items: flex-start;
   }
 }
+/* SCOREBOARD TABLE */
+
+.scoreboard-table {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.scoreboard-header,
+.scoreboard-row {
+  display: grid;
+  grid-template-columns: 0.8fr 0.7fr 1.5fr 1fr;
+  gap: 10px;
+  align-items: stretch;
+  text-align: center;
+}
+
+.scoreboard-header {
+  margin-bottom: 10px;
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--text);
+}
+
+.scoreboard-header span {
+  padding: 10px 4px;
+}
+
+.scoreboard-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.scoreboard-row {
+  margin: 0;
+}
+
+.scoreboard-row > * {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-width: 0;
+  padding: 14px 6px;
+  border: 1px solid #bd8194;
+  background: rgba(255, 255, 255, 0.035);
+  font-size: 17px;
+  overflow-wrap: anywhere;
+}
+
+.scoreboard-rank {
+  color: #d99aaf;
+}
+
+.scoreboard-name {
+  font-weight: 600;
+}
+
+.scoreboard-wins {
+  white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+  .scoreboard-header,
+  .scoreboard-row {
+    grid-template-columns: 0.65fr 0.65fr 1.4fr 0.9fr;
+    gap: 6px;
+  }
+
+  .scoreboard-header {
+    font-size: 12px;
+  }
+
+  .scoreboard-row > * {
+    padding: 12px 3px;
+    font-size: 13px;
+  }
+}
