@@ -1024,11 +1024,26 @@ winnerManagement?.addEventListener("submit", async e => {
   if(!result.error) await Promise.all([loadWinnerManagement(),loadWinners()]);
 });
 
-$("winnerEntryForm")?.addEventListener("submit",async e=>{
+$("winnerEntryForm")?.addEventListener("submit", async e => {
   e.preventDefault();
-  const {error}=await db.from("winner_entries").insert({edition_id:$("winnerEntrySeason").value,category_name:$("winnerEntryCategory").value.trim(),nominee_name:$("winnerEntryName").value.trim()});
-  message("adminMessage",error?.message||"Winner entry added.",!!error);
-  if(!error){e.target.reset();await Promise.all([loadWinnerManagement(),loadWinners()]);}
+
+  const selectedSeason = $("winnerEntrySeason").value;
+  const selectedCategory = $("winnerEntryCategory").value;
+
+  const { error } = await db.from("winner_entries").insert({
+    edition_id: selectedSeason,
+    category_name: selectedCategory.trim(),
+    nominee_name: $("winnerEntryName").value.trim()
+  });
+
+  message("adminMessage", error?.message || "Winner entry added.", !!error);
+
+  if (!error) {
+    $("winnerEntryName").value = "";
+    await Promise.all([loadWinnerManagement(), loadWinners()]);
+    $("winnerEntrySeason").value = selectedSeason;
+    $("winnerEntryCategory").value = selectedCategory;
+  }
 });
 
 $("eventForm")?.addEventListener("submit",async e=>{
