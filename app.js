@@ -882,14 +882,15 @@ async function loadCommunityScoreboard() {
     }
 
     return `
-      <article class="scoreboard-row">
-        <strong class="scoreboard-rank">#${rank}</strong>
-        <span class="scoreboard-name">${escapeHtml(person.name)}</span>
-        <strong class="scoreboard-wins">
-          ${person.wins} ${person.wins === 1 ? "win" : "wins"}
-        </strong>
-      </article>
-    `;
+  <article class="scoreboard-row">
+    <strong class="scoreboard-index">${index + 1}</strong>
+    <strong class="scoreboard-rank">#${rank}</strong>
+    <span class="scoreboard-name">${escapeHtml(person.name)}</span>
+    <strong class="scoreboard-wins">
+      ${person.wins} ${person.wins === 1 ? "win" : "wins"}
+    </strong>
+  </article>
+`;
   }).join("");
 }
 async function loadHomepageEvent() {
