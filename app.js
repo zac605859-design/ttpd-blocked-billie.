@@ -41,16 +41,23 @@ async function loadVoting() {
   if (error) { $("categories").innerHTML = '<p class="muted">Could not load categories.</p>'; return; }
   categoryCache = data || [];
   $("categories").innerHTML = categoryCache.length ? categoryCache.map(c => `<article class="category-card"><h3>${escapeHtml(c.name)}</h3>${(c.nominees||[]).map(n=>`<label class="nominee"><input type="radio" name="category-${c.id}" value="${n.id}" required><span>${escapeHtml(n.name)}</span></label>`).join("") || '<p class="muted">No nominees added yet.</p>'}</article>`).join("") : '<p class="muted">No active categories yet.</p>';
+  // The public ballot uses active categories, but admins must be able to
+  // add nominees to any category, including categories not currently active.
   const nomineeCategory = $("nomineeCategory");
-const previousCategory = nomineeCategory.value;
+  const previousCategory = nomineeCategory.value;
+  const { data: allCategories, error: allCategoriesError } = await db
+    .from("categories")
+    .select("id,name")
+    .order("sort_order");
 
-nomineeCategory.innerHTML = categoryCache.map(c =>
-  `<option value="${c.id}">${escapeHtml(c.name)}</option>`
-).join("");
+  const nomineeCategories = allCategoriesError ? categoryCache : (allCategories || []);
+  nomineeCategory.innerHTML = nomineeCategories.map(c =>
+    `<option value="${c.id}">${escapeHtml(c.name)}</option>`
+  ).join("");
 
-if (categoryCache.some(c => c.id === previousCategory)) {
-  nomineeCategory.value = previousCategory;
-}
+  if (nomineeCategories.some(c => c.id === previousCategory)) {
+    nomineeCategory.value = previousCategory;
+  }
 }
 async function loadWinners() {
   const {data: editions, error} = await db.from("award_editions").select("id,title,month,year").eq("published",true).order("year",{ascending:true}).order("month",{ascending:true}).order("created_at",{ascending:true});
@@ -474,12 +481,41 @@ $("votingToggle").addEventListener("change",async e=>{const {error}=await db.fro
 $("refreshData").addEventListener("click",loadPublic);
 $("loadMoreAdmins").addEventListener("click",()=>{directoryState.admins.visible+=DIRECTORY_PAGE_SIZE;renderDirectory("admins");});
 $("loadMoreMembers").addEventListener("click",()=>{directoryState.members.visible+=DIRECTORY_PAGE_SIZE;renderDirectory("members");});
-$("categoryForm").addEventListener("submit",async e=>{e.preventDefault();const {error}=await db.from("categories").insert({name:$("newCategory").value.trim()});message("adminMessage",error?.message||"Category added.",!!error);e.target.reset();await loadVoting();});
+$("categoryForm").addEventListener("submit", async e => {
+  e.preventDefault();
+
+  const name = $("newCategory").value.trim();
+  if (!name) {
+    message("adminMessage", "Enter a category name.", true);
+    return;
+  }
+
+  const { error } = await db.from("categories").insert({ name });
+  message("adminMessage", error?.message || "Category added.", !!error);
+
+  if (!error) {
+    $("newCategory").value = "";
+    await Promise.all([
+      loadVoting(),
+      loadCategoryManagement()
+    ]);
+  }
+});
+
 $("nomineeForm").addEventListener("submit", async e => {
   e.preventDefault();
 
   const selectedCategory = $("nomineeCategory").value;
   const nomineeName = $("newNominee").value.trim();
+
+  if (!selectedCategory) {
+    message("adminMessage", "Select a category first.", true);
+    return;
+  }
+  if (!nomineeName) {
+    message("adminMessage", "Enter a nominee name.", true);
+    return;
+  }
 
   const { error } = await db.from("nominees").insert({
     category_id: selectedCategory,
@@ -490,7 +526,10 @@ $("nomineeForm").addEventListener("submit", async e => {
 
   if (!error) {
     $("newNominee").value = "";
-    await loadVoting();
+    await Promise.all([
+      loadVoting(),
+      loadNomineeManagement()
+    ]);
     $("nomineeCategory").value = selectedCategory;
   }
 });
