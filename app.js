@@ -421,38 +421,73 @@ async function loadNomineeManagement() {
     return;
   }
 
-  box.innerHTML = nominees.map(n => {
-    const category = categories.find(c => c.id === n.category_id);
+  const groupedMarkup = categories.map(category => {
+    const categoryNominees = nominees.filter(n => n.category_id === category.id);
+    if (!categoryNominees.length) return "";
 
     return `
-      <article class="admin-management-item" data-nominee-id="${escapeHtml(n.id)}">
-        <div class="admin-management-head">
-          <div>
-            <h4>${escapeHtml(n.name)}</h4>
-            <small class="fine-print">${escapeHtml(category?.name || "Unknown category")}</small>
-          </div>
-          <div class="admin-management-actions">
-            <button type="button" class="button secondary small" data-action="edit-nominee">Edit</button>
-            <button type="button" class="button secondary small" data-action="delete-nominee">Delete</button>
-          </div>
-        </div>
-        <form class="admin-edit-form hidden">
-          <input name="name" required maxlength="120" value="${escapeHtml(n.name)}">
-          <select name="category_id" required>
-            ${categories.map(c => `
-              <option value="${escapeHtml(c.id)}" ${c.id === n.category_id ? "selected" : ""}>
-                ${escapeHtml(c.name)}
-              </option>
-            `).join("")}
-          </select>
-          <div class="admin-management-actions">
-            <button type="submit" class="button primary small">Save changes</button>
-            <button type="button" class="button secondary small" data-action="cancel-edit">Cancel</button>
-          </div>
-        </form>
-      </article>
+      <section class="nominee-category-group">
+        <h3>${escapeHtml(category.name)}</h3>
+        ${categoryNominees.map(n => `
+          <article class="admin-management-item" data-nominee-id="${escapeHtml(n.id)}">
+            <div class="admin-management-head">
+              <div>
+                <h4>${escapeHtml(n.name)}</h4>
+              </div>
+              <div class="admin-management-actions">
+                <button type="button" class="button secondary small" data-action="edit-nominee">Edit</button>
+                <button type="button" class="button secondary small" data-action="delete-nominee">Delete</button>
+              </div>
+            </div>
+            <form class="admin-edit-form hidden">
+              <input name="name" required maxlength="120" value="${escapeHtml(n.name)}">
+              <select name="category_id" required>
+                ${categories.map(c => `
+                  <option value="${escapeHtml(c.id)}" ${c.id === n.category_id ? "selected" : ""}>
+                    ${escapeHtml(c.name)}
+                  </option>
+                `).join("")}
+              </select>
+              <div class="admin-management-actions">
+                <button type="submit" class="button primary small">Save changes</button>
+                <button type="button" class="button secondary small" data-action="cancel-edit">Cancel</button>
+              </div>
+            </form>
+          </article>
+        `).join("")}
+      </section>
     `;
   }).join("");
+
+  const uncategorized = nominees.filter(n => !categories.some(c => c.id === n.category_id));
+  const uncategorizedMarkup = uncategorized.length ? `
+    <section class="nominee-category-group">
+      <h3>Unassigned category</h3>
+      ${uncategorized.map(n => `
+        <article class="admin-management-item" data-nominee-id="${escapeHtml(n.id)}">
+          <div class="admin-management-head">
+            <div><h4>${escapeHtml(n.name)}</h4></div>
+            <div class="admin-management-actions">
+              <button type="button" class="button secondary small" data-action="edit-nominee">Edit</button>
+              <button type="button" class="button secondary small" data-action="delete-nominee">Delete</button>
+            </div>
+          </div>
+          <form class="admin-edit-form hidden">
+            <input name="name" required maxlength="120" value="${escapeHtml(n.name)}">
+            <select name="category_id" required>
+              ${categories.map(c => `<option value="${escapeHtml(c.id)}">${escapeHtml(c.name)}</option>`).join("")}
+            </select>
+            <div class="admin-management-actions">
+              <button type="submit" class="button primary small">Save changes</button>
+              <button type="button" class="button secondary small" data-action="cancel-edit">Cancel</button>
+            </div>
+          </form>
+        </article>
+      `).join("")}
+    </section>
+  ` : "";
+
+  box.innerHTML = groupedMarkup + uncategorizedMarkup;
 }
 async function requireAdmin() {
   const {data:{session}}=await db.auth.getSession();
