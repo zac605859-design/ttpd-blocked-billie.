@@ -363,23 +363,29 @@ $("ballotForm").addEventListener("submit", async e => {
     return;
   }
 
-  const { error } = await db.rpc("submit_community_ballot", {
-    p_browser_id: browserId,
-    p_choices: choices
-  });
-
-  message(
-    "voteMessage",
-    error
-      ? error.message
-      : "Ballot submitted successfully.",
-    !!error
-  );
-
-  if (!error) {
-    $("submitBallot").disabled = true;
-  }
+ const { error } = await db.rpc("submit_community_ballot", {
+  p_browser_id: browserId,
+  p_choices: choices
 });
+
+const errorText = [
+  error?.message,
+  error?.details,
+  error?.hint
+].filter(Boolean).join(" ");
+
+const isDuplicate =
+  error?.code === "23505" ||
+  /duplicate key|unique constraint|already submitted/i.test(errorText);
+
+if (isDuplicate) {
+  message("voteMessage", "You already submitted your ballot.", true);
+} else if (error) {
+  message("voteMessage", "Submission failed: " + error.message, true);
+} else {
+  message("voteMessage", "Ballot submitted. Thank you for voting!", false);
+  $("submitBallot").disabled = true;
+}
 async function loadCategoryManagement() {
   const box = $("categoryManagementList");
   if (!box || !db) return;
