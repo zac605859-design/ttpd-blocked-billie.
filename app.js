@@ -347,13 +347,38 @@ function safeUrl(value) { try { const u=new URL(value); return ["https:","http:"
 
 $("menuToggle").addEventListener("click",()=>$("mainNav").classList.toggle("open"));
 document.querySelectorAll("#mainNav a").forEach(a=>a.addEventListener("click",()=>$("mainNav").classList.remove("open")));
-$("ballotForm").addEventListener("submit",async e=>{
-  e.preventDefault(); if(!db)return;
-  const choices=categoryCache.map(c=>({category_id:c.id,nominee_id:$(`ballotForm input[name="category-${c.id}"]:checked`)?.value})).filter(x=>x.nominee_id);
-  if(choices.length!==categoryCache.length){message("voteMessage","Choose one nominee in every active category.",true);return;}
-  const {error}=await db.rpc("submit_community_ballot",{p_browser_id:browserId,p_choices:choices});
-  message("voteMessage",error?(error.message.includes("duplicate")?"A ballot has already been submitted from this browser.":error.message):"Ballot submitted.",!!error);
-  if(!error)$("submitBallot").disabled=true;
+$("ballotForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  if (!db) return;
+
+  const choices = categoryCache.map(c => ({
+    category_id: c.id,
+    nominee_id: document.querySelector(
+      `#ballotForm input[name="category-${c.id}"]:checked`
+    )?.value
+  }));
+
+  if (choices.some(choice => !choice.nominee_id)) {
+    message("voteMessage", "Choose one nominee in every active category.", true);
+    return;
+  }
+
+  const { error } = await db.rpc("submit_community_ballot", {
+    p_browser_id: browserId,
+    p_choices: choices
+  });
+
+  message(
+    "voteMessage",
+    error
+      ? error.message
+      : "Ballot submitted successfully.",
+    !!error
+  );
+
+  if (!error) {
+    $("submitBallot").disabled = true;
+  }
 });
 async function loadCategoryManagement() {
   const box = $("categoryManagementList");
