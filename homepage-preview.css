@@ -629,3 +629,12 @@ body.admin-preview .home-topbar .home-emblem img {
   .card-admin { grid-area:admin !important; }
   .home-footer { margin-top:0 !important; }
 }
+@media (max-width: 700px) {
+  .home-card-grid {
+    background: transparent !important;
+  }
+
+  .home-shell {
+    background: #25281f !important;
+  }
+}
