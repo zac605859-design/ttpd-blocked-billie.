@@ -638,3 +638,43 @@ body.admin-preview .home-topbar .home-emblem img {
     background: #25281f !important;
   }
 }
+/* MOBILE — ADMINS & MEMBERS SECTION */
+@media (max-width: 700px) {
+
+  /* Change the entire section background */
+  .home-community-actions {
+    background: #25281f !important;
+    background-color: #25281f !important;
+    padding: 24px 12px !important;
+    margin: 8px 0 16px !important;
+    border: 1px solid #8b7952 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    gap: 16px !important;
+  }
+
+  /* ADMINS — maroon */
+  .home-community-actions a:first-child {
+    background: linear-gradient(135deg, #702536, #3b1020) !important;
+    border: 1px solid #a58d68 !important;
+    color: #eee2c9 !important;
+  }
+
+  /* MEMBERS — dark blue */
+  .home-community-actions a:last-child {
+    background: linear-gradient(135deg, #183c60, #0b2039) !important;
+    border: 1px solid #a58d68 !important;
+    color: #eee2c9 !important;
+  }
+
+  /* Keep both buttons consistent */
+  .home-community-actions a {
+    min-width: 145px !important;
+    min-height: 58px !important;
+    border-radius: 14px !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    letter-spacing: 2px !important;
+    box-shadow: 0 8px 20px rgba(0,0,0,.25) !important;
+  }
+}
