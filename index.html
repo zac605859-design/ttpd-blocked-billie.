@@ -16,10 +16,6 @@
   <header class="home-topbar">
     <button class="news-bell" type="button" aria-label="News and updates" onclick="document.getElementById('newsPanel').classList.toggle('open')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg></button>
     <a class="home-emblem" href="index.html" aria-label="TTPD BLOCKED BILLIE home"><img class="uploaded-site-logo" src="./site-logo.png" alt="TTPD BLOCKED BILLIE logo" onerror="this.style.display='none';this.parentElement.classList.add('logo-not-added')"><span class="logo-fallback">ADD LOGO</span></a>
-    <div class="topbar-actions">
-      <a href="admins.html">ADMINS</a>
-      <a href="members.html">MEMBERS</a>
-    </div>
   </header>
 
   <aside class="news-panel" id="newsPanel" aria-label="News and updates">
@@ -39,6 +35,11 @@
       <h1>GROUP<span>CHAT</span></h1>
       <p>A safe place for Swifties.</p>
     </section>
+
+    <nav class="home-community-actions" aria-label="Community links">
+      <a href="admins.html">ADMINS</a>
+      <a href="members.html">MEMBERS</a>
+    </nav>
 
     <section id="eventCountdownSection" class="home-up-next" aria-label="Main community countdown">
       <div class="up-next-copy">
