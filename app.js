@@ -2,7 +2,10 @@
 const SUPABASE_URL = "https://shmwwirfrbnbxymprgqr.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_9glptDeHOUtju4g6mBJYLw_ryhIzAZx";
 const configured = !SUPABASE_URL.startsWith("YOUR_") && !SUPABASE_ANON_KEY.startsWith("YOUR_");
-const db = configured ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+const supabaseLibraryReady = !!(window.supabase && typeof window.supabase.createClient === "function");
+const db = configured && supabaseLibraryReady
+  ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+  : null;
 const $ = (id) => document.getElementById(id);
 const browserId = (() => {
   let id = localStorage.getItem("tbb_browser_id");
@@ -15,35 +18,51 @@ function message(id, text, error=false) {
   const el = $(id); if (el) { el.textContent = text; el.style.color = error ? "#a12d43" : "#42664c"; }
 }
 function unavailable() {
-  ["categories","winnerSeasonOptions","adminGrid","memberGrid","announcements","galleryAlbumsGrid"].forEach(id => { if ($(id)) $(id).innerHTML = '<p class="muted">Connect Supabase to load this section. See README.md.</p>'; });
-  $("votingStatus").textContent = "Setup required";
+  ["categories","winnerSeasonOptions","adminGrid","memberGrid","announcements","galleryAlbumsGrid","eventsGrid","scoreboardGrid"].forEach(id => {
+    const el = $(id);
+    if (el) el.innerHTML = '<p class="muted">Data is unavailable. Check the Supabase connection and access policies.</p>';
+  });
+  const status = $("votingStatus");
+  if (status) status.textContent = "Setup required";
 }
 async function loadPublic() {
   if (!db) return unavailable();
-
-  await Promise.all([
-    loadVoting(),
-    loadWinners(),
-    loadMembers(),
-    loadAnnouncements(),
-    loadGallery(),
-    loadCommunityEvents(),
-    loadCommunityScoreboard()
-  ]);
+  const jobs = [];
+  if ($("votingStatus") || $("categories")) jobs.push(["voting", loadVoting]);
+  if ($("winnerSeasonOptions") && $("winnerSeasonResults")) jobs.push(["winners", loadWinners]);
+  if ($("adminGrid") || $("memberGrid") || $("adminCount") || $("memberCount")) jobs.push(["directories", loadMembers]);
+  if ($("announcements") || $("pinnedNewsTicker")) jobs.push(["announcements", loadAnnouncements]);
+  if ($("galleryAlbumsGrid")) jobs.push(["gallery", loadGallery]);
+  if ($("eventsGrid")) jobs.push(["events", loadCommunityEvents]);
+  if ($("scoreboardGrid")) jobs.push(["scoreboard", loadCommunityScoreboard]);
+  const settled = await Promise.allSettled(jobs.map(([,fn]) => fn()));
+  settled.forEach((result,i) => {
+    if (result.status === "rejected") {
+      console.error("TBB " + jobs[i][0] + " loader failed:", result.reason);
+      const targets = {voting:"categories",winners:"winnerSeasonOptions",directories:"memberGrid",announcements:"announcements",gallery:"galleryAlbumsGrid",events:"eventsGrid",scoreboard:"scoreboardGrid"};
+      const target = $(targets[jobs[i][0]]);
+      if (target) target.innerHTML = '<p class="muted">This section could not load. Refresh and check the browser Console for details.</p>';
+    }
+  });
 }
 async function loadVoting() {
+  const statusEl = $("votingStatus"), categoriesEl = $("categories");
+  const ballotEl = $("ballotForm"), closedEl = $("votingClosed");
+  if (!statusEl && !categoriesEl && !ballotEl) return;
   const {data: setting} = await db.from("site_settings").select("value").eq("key","voting_open").maybeSingle();
   const isOpen = setting?.value === true;
-  $("votingStatus").textContent = isOpen ? "VOTING OPEN" : "VOTING CLOSED";
-  $("votingClosed").classList.toggle("hidden", isOpen);
-  $("ballotForm").classList.toggle("hidden", !isOpen);
+  if (statusEl) statusEl.textContent = isOpen ? "VOTING OPEN" : "VOTING CLOSED";
+  if (closedEl) closedEl.classList.toggle("hidden", isOpen);
+  if (ballotEl) ballotEl.classList.toggle("hidden", !isOpen);
+  if (!categoriesEl) return;
   const {data, error} = await db.from("categories").select("id,name,nominees(id,name)").eq("active",true).order("sort_order");
-  if (error) { $("categories").innerHTML = '<p class="muted">Could not load categories.</p>'; return; }
+  if (error) { categoriesEl.innerHTML = `<p class="muted">Could not load categories: ${escapeHtml(error.message)}</p>`; return; }
   categoryCache = data || [];
-  $("categories").innerHTML = categoryCache.length ? categoryCache.map(c => `<article class="category-card"><h3>${escapeHtml(c.name)}</h3>${(c.nominees||[]).map(n=>`<label class="nominee"><input type="radio" name="category-${c.id}" value="${n.id}" required><span>${escapeHtml(n.name)}</span></label>`).join("") || '<p class="muted">No nominees added yet.</p>'}</article>`).join("") : '<p class="muted">No active categories yet.</p>';
+  categoriesEl.innerHTML = categoryCache.length ? categoryCache.map(c => `<article class="category-card"><h3>${escapeHtml(c.name)}</h3>${(c.nominees||[]).map(n=>`<label class="nominee"><input type="radio" name="category-${c.id}" value="${n.id}" required><span>${escapeHtml(n.name)}</span></label>`).join("") || '<p class="muted">No nominees added yet.</p>'}</article>`).join("") : '<p class="muted">No active categories yet.</p>';
   // The public ballot uses active categories, but admins must be able to
   // add nominees to any category, including categories not currently active.
   const nomineeCategory = $("nomineeCategory");
+  if (!nomineeCategory) return;
   const previousCategory = nomineeCategory.value;
   const { data: allCategories, error: allCategoriesError } = await db
     .from("categories")
@@ -63,6 +82,7 @@ async function loadWinners() {
   const {data: editions, error} = await db.from("award_editions").select("id,title,month,year").eq("published",true).order("year",{ascending:true}).order("month",{ascending:true}).order("created_at",{ascending:true});
   const options = $("winnerSeasonOptions");
   const results = $("winnerSeasonResults");
+  if (!options || !results) return;
   if (error) { options.innerHTML = '<p class="muted">Could not load published seasons.</p>'; return; }
   if (!editions?.length) { options.innerHTML = '<p class="muted">No seasons have been published yet.</p>'; results.innerHTML = ''; return; }
   const ids = editions.map(e=>e.id);
@@ -92,43 +112,48 @@ function renderDirectory(key) {
 }
 async function loadDirectory(key){const state=directoryState[key],grid=$(state.gridId);const {data,error}=await db.from(state.table).select("id,display_name,handle,bio,avatar_url,created_at").eq("visible",true).order("created_at",{ascending:true});if(error){if(grid)grid.innerHTML=`<p class="muted">Could not load ${state.label} profiles.</p>`;return;}state.rows=data||[];state.visible=DIRECTORY_PAGE_SIZE;renderDirectory(key);}
 async function loadDirectoryManagement(key){const state=directoryState[key],container=$(state.managementId);if(!container||!db)return;const {data,error}=await db.from(state.table).select("id,display_name,handle,bio,avatar_url,visible,created_at").order("created_at",{ascending:true});if(error){container.innerHTML=`<p class="muted">Could not load ${state.label}s: ${escapeHtml(error.message)}</p>`;return;}if(!data?.length){container.innerHTML=`<p class="muted">No ${state.label} profiles have been added yet.</p>`;return;}
-container.innerHTML=data.map(m=>`<div class="admin-member-item" data-directory-key="${key}" data-member-id="${escapeHtml(m.id)}"><div class="admin-member-row"><div class="admin-member-summary">${m.avatar_url&&safeUrl(m.avatar_url)?`<img class="avatar" src="${escapeHtml(safeUrl(m.avatar_url))}" alt="">`:`<div class="avatar">${escapeHtml((m.display_name||"?").slice(0,1).toUpperCase())}</div>`}<div><h4>${escapeHtml(m.display_name)}</h4><div class="handle">${escapeHtml(m.handle||"")}</div><div class="fine-print">${m.visible?"Visible in public directory":"Hidden from public directory"}</div></div></div><div class="admin-member-actions"><button type="button" class="button secondary small" data-action="edit">Edit</button><button type="button" class="button secondary small" data-action="delete">Delete</button></div></div><form class="admin-member-edit hidden"><label>Display name<input name="display_name" required maxlength="100" value="${escapeHtml(m.display_name||"")}"></label><label>Handle<input name="handle" maxlength="100" value="${escapeHtml(m.handle||"")}"></label><label>Short bio<textarea name="bio" maxlength="500">${escapeHtml(m.bio||"")}</textarea></label><label>Avatar image URL<input name="avatar_url" type="url" placeholder="https://..." value="${escapeHtml(m.avatar_url||"")}"></label><label class="switch-line"><input name="visible" type="checkbox" ${m.visible?"checked":""}> Show in public directory</label><div class="admin-member-edit-actions"><button type="submit" class="button primary small">Save changes</button><button type="button" class="button secondary small" data-action="cancel">Cancel</button></div></form></div>`).join("");}
+container.innerHTML=data.map(m=>`<div class="admin-member-item" data-directory-key="${key}" data-member-id="${escapeHtml(m.id)}"><div class="admin-member-row"><div class="admin-member-summary">${m.avatar_url&&safeUrl(m.avatar_url)?`<img class="avatar" src="${escapeHtml(safeUrl(m.avatar_url))}" alt="">`:`<div class="avatar">${escapeHtml((m.display_name||"?").slice(0,1).toUpperCase())}</div>`}<div><h4>${escapeHtml(m.display_name)}</h4><div class="handle">${escapeHtml(m.handle||"")}</div><div class="fine-print">${m.visible?"Visible in public directory":"Hidden from public directory"}</div></div></div><div class="admin-member-actions"><button type="button" class="button secondary small" data-action="edit">Edit</button><button type="button" class="button secondary small" data-action="delete">Delete</button></div></div><form class="admin-member-edit hidden"><label>Display name<input name="display_name" required maxlength="100" value="${escapeHtml(m.display_name||"")}"></label><label>Handle<input name="handle" maxlength="100" value="${escapeHtml(m.handle||"")}"></label><label>Short bio<textarea name="bio" maxlength="500">${escapeHtml(m.bio||"")}</textarea></label><label>Avatar<div class="avatar-picker-field"><input name="avatar_url" type="hidden" value="${escapeHtml(m.avatar_url||"")}"><button type="button" class="button secondary small directory-avatar-picker" data-avatar-directory="${key}" data-avatar-member="${escapeHtml(m.id)}">Choose from Gallery</button><span class="fine-print avatar-selection-note">${m.avatar_url?"Current avatar saved":"No avatar selected"}</span></div></label><label class="switch-line"><input name="visible" type="checkbox" ${m.visible?"checked":""}> Show in public directory</label><div class="admin-member-edit-actions"><button type="submit" class="button primary small">Save changes</button><button type="button" class="button secondary small" data-action="cancel">Cancel</button></div></form></div>`).join("");}
 async function loadMembers() {
-  await Promise.all([
-    loadDirectory("admins"),
-    loadDirectory("members")
-  ]);
-
+  const tasks = [];
+  if ($("adminGrid")) tasks.push(loadDirectory("admins"));
+  if ($("memberGrid")) tasks.push(loadDirectory("members"));
+  await Promise.all(tasks);
+  const countTargets = $("adminCount") || $("memberCount");
+  if (!countTargets || !db) return;
   const { data, error } = await db.rpc("get_directory_counts");
-
-  if (error || !data?.length) return;
-
-  $("adminCount").textContent = `(${data[0].admin_count})`;
-  $("memberCount").textContent = `(${data[0].member_count})`;
+  if (error || !data?.length) {
+    console.warn("Directory count RPC unavailable:", error?.message || "No count returned");
+    return;
+  }
+  if ($("adminCount")) $("adminCount").textContent = `(${data[0].admin_count})`;
+  if ($("memberCount")) $("memberCount").textContent = `(${data[0].member_count})`;
 }
 async function loadAdminMembers(){await Promise.all([loadDirectoryManagement("admins"),loadDirectoryManagement("members")]);}
 
 async function loadAnnouncements() {
+  const panel = $("announcements"), ticker = $("pinnedNewsTicker");
+  if (!panel && !ticker) return;
   const {data,error}=await db.from("announcements")
     .select("title,body,created_at,is_pinned")
     .eq("published",true)
     .order("created_at",{ascending:false})
     .limit(20);
   if(error){
-    $("announcements").innerHTML='<p class="muted">Could not load announcements.</p>';
-    $("pinnedNewsTicker").classList.add("hidden");
+    if(panel) panel.innerHTML='<p class="muted">Could not load announcements.</p>';
+    if(ticker) ticker.classList.add("hidden");
+    console.error("Announcements query failed:",error.message);
     return;
   }
-  const pinned = (data || []).filter(a => a.is_pinned);
-  const ticker = $("pinnedNewsTicker");
-  if (pinned.length) {
-    ticker.innerHTML = `<div class="pinned-news-track">${[...pinned,...pinned].map(a=>`<span>${escapeHtml(a.title)}</span>`).join("")}</div>`;
-    ticker.classList.remove("hidden");
-  } else {
-    ticker.innerHTML = "";
-    ticker.classList.add("hidden");
+  const rows=data||[], pinned=rows.filter(a=>a.is_pinned);
+  if(ticker){
+    ticker.innerHTML=pinned.length
+      ? `<div class="pinned-news-track">${[...pinned,...pinned].map(a=>`<span>✦ ${escapeHtml(a.title)}</span>`).join("")}</div>`
+      : "";
+    ticker.classList.toggle("hidden",!pinned.length);
   }
-  $("announcements").innerHTML=data?.length?data.map(a=>`<article class="announcement">${a.is_pinned?'<span class="pinned-tag">PINNED</span> ':''}<time>${new Date(a.created_at).toLocaleDateString()}</time><h3>${escapeHtml(a.title)}</h3><p>${escapeHtml(a.body)}</p></article>`).join(""):'<p class="muted">No announcements yet.</p>';
+  if(panel) panel.innerHTML=rows.length
+    ? rows.map(a=>`<article class="announcement">${a.is_pinned?'<span class="pinned-tag">PINNED</span> ':''}<time>${new Date(a.created_at).toLocaleDateString()}</time><h3>${escapeHtml(a.title)}</h3><p>${escapeHtml(a.body)}</p></article>`).join("")
+    : '<p class="muted">No announcements yet.</p>';
 }
 let galleryAlbumsCache = [];
 
@@ -239,6 +264,77 @@ $("galleryBackButton")?.addEventListener("click", () => {
   $("gallery").scrollIntoView({ behavior: "smooth", block: "start" });
 });
 
+
+let galleryPickerTargetSlot = null;
+let galleryPickerTargetInput = null;
+
+// Close the Gallery picker from either the × button or the backdrop.
+document.addEventListener("click", event => {
+  if (!event.target.closest("[data-gallery-picker-close]")) return;
+  const modal = $("galleryImagePicker");
+  if (modal) modal.classList.add("hidden");
+  galleryPickerTargetInput = null;
+});
+async function openGalleryImagePicker(slot, targetInput = null) {
+  galleryPickerTargetSlot = Number(slot || 0);
+  galleryPickerTargetInput = targetInput;
+  const modal = $("galleryImagePicker");
+  const grid = $("galleryImagePickerGrid");
+  if (!modal || !grid || !db) return;
+  modal.classList.remove("hidden");
+  grid.innerHTML = '<p class="muted">Loading saved gallery images…</p>';
+  const {data: albums, error: albumError} = await db.from("gallery_albums").select("id,title").order("display_order");
+  if (albumError) { grid.innerHTML = `<p class="muted">${escapeHtml(albumError.message)}</p>`; return; }
+  if (!albums?.length) { grid.innerHTML = '<p class="muted">There are no saved gallery images yet.</p>'; return; }
+  const {data: images, error} = await db.from("gallery_album_images")
+    .select("id,album_id,image_url,caption,display_order")
+    .in("album_id", albums.map(a=>a.id)).order("display_order");
+  if (error) { grid.innerHTML = `<p class="muted">${escapeHtml(error.message)}</p>`; return; }
+  if (!images?.length) { grid.innerHTML = '<p class="muted">There are no saved gallery images yet.</p>'; return; }
+  grid.innerHTML = images.map(image=>{
+    const album = albums.find(a=>a.id===image.album_id);
+    return `<button type="button" class="gallery-picker-item" data-gallery-image-url="${escapeHtml(image.image_url)}">
+      <img src="${escapeHtml(image.image_url)}" alt="${escapeHtml(image.caption || album?.title || "Gallery image")}">
+      <span>${escapeHtml(image.caption || album?.title || "Gallery image")}</span>
+    </button>`;
+  }).join("");
+  grid.querySelectorAll("[data-gallery-image-url]").forEach(button=>button.addEventListener("click",()=>{
+    const input = galleryPickerTargetInput || $(`galleryImageUrl${galleryPickerTargetSlot}`);
+    if (input) {
+      input.value = button.dataset.galleryImageUrl || "";
+      input.dispatchEvent(new Event("input", {bubbles:true}));
+      const avatarSelection = input.id === "adminAvatar" ? $("adminAvatarSelection") : input.id === "memberAvatar" ? $("memberAvatarSelection") : null;
+      if (avatarSelection) avatarSelection.textContent = "Avatar selected from Gallery.";
+      const galleryMatch = input.id?.match(/^galleryImageUrl([1-4])$/);
+      if (galleryMatch) { const note = $("galleryImageSelection" + galleryMatch[1]); if (note) note.textContent = "Image selected from Gallery."; }
+      if (input.name === "avatar_url") {
+        const note = input.closest("label")?.querySelector(".avatar-selection-note");
+        if (note) note.textContent = "Avatar selected from Gallery.";
+      }
+    }
+    modal.classList.add("hidden");
+    galleryPickerTargetInput = null;
+  }));
+}
+document.addEventListener("click", event => {
+  const button = event.target.closest(".directory-avatar-picker");
+  if (!button) return;
+  const memberId = button.dataset.avatarMember;
+  if (memberId) {
+    const row = button.closest(".admin-member-item");
+    galleryPickerTargetInput = row?.querySelector('input[name="avatar_url"]') || null;
+  } else {
+    galleryPickerTargetInput = $(button.dataset.avatarInput);
+  }
+  if (galleryPickerTargetInput) openGalleryImagePicker(0, galleryPickerTargetInput);
+});
+document.querySelectorAll(".gallery-pick-button").forEach(button=>
+  button.addEventListener("click",()=>openGalleryImagePicker(button.dataset.gallerySlot, null))
+);
+document.querySelectorAll("[data-gallery-picker-close]").forEach(button=>
+  button.addEventListener("click",()=> $("galleryImagePicker")?.classList.add("hidden"))
+);
+
 async function loadGalleryAdmin() {
   const box = $("galleryAdminManagementList");
   if (!box || !db) return;
@@ -334,6 +430,8 @@ async function editGalleryAlbum(albumId) {
   for (let slot = 1; slot <= 4; slot++) {
     const image = (images || []).find(item => item.display_order === slot);
     $(`galleryImageUrl${slot}`).value = image?.image_url || "";
+    const selectionNote = $(`galleryImageSelection${slot}`);
+    if (selectionNote) selectionNote.textContent = image?.image_url ? "Image selected from Gallery." : "No image selected";
     $(`galleryCaption${slot}`).value = image?.caption || "";
   }
 
@@ -345,40 +443,15 @@ async function editGalleryAlbum(albumId) {
 function escapeHtml(value) { return String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
 function safeUrl(value) { try { const u=new URL(value); return ["https:","http:"].includes(u.protocol)?u.href:""; } catch { return ""; } }
 
-$("menuToggle").addEventListener("click",()=>$("mainNav").classList.toggle("open"));
+$("menuToggle")?.addEventListener("click",()=>$("mainNav").classList.toggle("open"));
 document.querySelectorAll("#mainNav a").forEach(a=>a.addEventListener("click",()=>$("mainNav").classList.remove("open")));
-$("ballotForm").addEventListener("submit", async e => {
-  e.preventDefault();
-  if (!db) return;
-
-  const choices = categoryCache.map(c => ({
-    category_id: c.id,
-    nominee_id: document.querySelector(
-      `#ballotForm input[name="category-${c.id}"]:checked`
-    )?.value
-  }));
-
-  if (choices.some(choice => !choice.nominee_id)) {
-    message("voteMessage", "Choose one nominee in every active category.", true);
-    return;
-  }
-
-const { error } = await db.rpc("submit_community_ballot", {
-    p_browser_id: browserId,
-    p_choices: choices
-  });
-
-  message(
-    "voteMessage",
-    error
-      ? error.message
-      : "Ballot submitted successfully.",
-    !!error
-  );
-
-  if (!error) {
-    $("submitBallot").disabled = true;
-  }
+$("ballotForm")?.addEventListener("submit",async e=>{
+  e.preventDefault(); if(!db)return;
+  const choices=categoryCache.map(c=>({category_id:c.id,nominee_id:document.querySelector(`#ballotForm input[name="category-${CSS.escape(String(c.id))}"]:checked`)?.value})).filter(x=>x.nominee_id);
+  if(choices.length!==categoryCache.length){message("voteMessage","Choose one nominee in every active category.",true);return;}
+  const {error}=await db.rpc("submit_community_ballot",{p_browser_id:browserId,p_choices:choices});
+  message("voteMessage",error?(error.message.includes("duplicate")?"A ballot has already been submitted from this browser.":error.message):"Ballot submitted.",!!error);
+  if(!error)$("submitBallot").disabled=true;
 });
 async function loadCategoryManagement() {
   const box = $("categoryManagementList");
@@ -446,75 +519,174 @@ async function loadNomineeManagement() {
     return;
   }
 
-  const groupedMarkup = categories.map(category => {
-    const categoryNominees = nominees.filter(n => n.category_id === category.id);
-    if (!categoryNominees.length) return "";
+  box.innerHTML = nominees.map(n => {
+    const category = categories.find(c => c.id === n.category_id);
 
     return `
-      <section class="nominee-category-group">
-        <h3>${escapeHtml(category.name)}</h3>
-        ${categoryNominees.map(n => `
-          <article class="admin-management-item" data-nominee-id="${escapeHtml(n.id)}">
-            <div class="admin-management-head">
-              <div>
-                <h4>${escapeHtml(n.name)}</h4>
-              </div>
-              <div class="admin-management-actions">
-                <button type="button" class="button secondary small" data-action="edit-nominee">Edit</button>
-                <button type="button" class="button secondary small" data-action="delete-nominee">Delete</button>
-              </div>
-            </div>
-            <form class="admin-edit-form hidden">
-              <input name="name" required maxlength="120" value="${escapeHtml(n.name)}">
-              <select name="category_id" required>
-                ${categories.map(c => `
-                  <option value="${escapeHtml(c.id)}" ${c.id === n.category_id ? "selected" : ""}>
-                    ${escapeHtml(c.name)}
-                  </option>
-                `).join("")}
-              </select>
-              <div class="admin-management-actions">
-                <button type="submit" class="button primary small">Save changes</button>
-                <button type="button" class="button secondary small" data-action="cancel-edit">Cancel</button>
-              </div>
-            </form>
-          </article>
-        `).join("")}
-      </section>
+      <article class="admin-management-item" data-nominee-id="${escapeHtml(n.id)}">
+        <div class="admin-management-head">
+          <div>
+            <h4>${escapeHtml(n.name)}</h4>
+            <small class="fine-print">${escapeHtml(category?.name || "Unknown category")}</small>
+          </div>
+          <div class="admin-management-actions">
+            <button type="button" class="button secondary small" data-action="edit-nominee">Edit</button>
+            <button type="button" class="button secondary small" data-action="delete-nominee">Delete</button>
+          </div>
+        </div>
+        <form class="admin-edit-form hidden">
+          <input name="name" required maxlength="120" value="${escapeHtml(n.name)}">
+          <select name="category_id" required>
+            ${categories.map(c => `
+              <option value="${escapeHtml(c.id)}" ${c.id === n.category_id ? "selected" : ""}>
+                ${escapeHtml(c.name)}
+              </option>
+            `).join("")}
+          </select>
+          <div class="admin-management-actions">
+            <button type="submit" class="button primary small">Save changes</button>
+            <button type="button" class="button secondary small" data-action="cancel-edit">Cancel</button>
+          </div>
+        </form>
+      </article>
     `;
   }).join("");
-
-  const uncategorized = nominees.filter(n => !categories.some(c => c.id === n.category_id));
-  const uncategorizedMarkup = uncategorized.length ? `
-    <section class="nominee-category-group">
-      <h3>Unassigned category</h3>
-      ${uncategorized.map(n => `
-        <article class="admin-management-item" data-nominee-id="${escapeHtml(n.id)}">
-          <div class="admin-management-head">
-            <div><h4>${escapeHtml(n.name)}</h4></div>
-            <div class="admin-management-actions">
-              <button type="button" class="button secondary small" data-action="edit-nominee">Edit</button>
-              <button type="button" class="button secondary small" data-action="delete-nominee">Delete</button>
-            </div>
-          </div>
-          <form class="admin-edit-form hidden">
-            <input name="name" required maxlength="120" value="${escapeHtml(n.name)}">
-            <select name="category_id" required>
-              ${categories.map(c => `<option value="${escapeHtml(c.id)}">${escapeHtml(c.name)}</option>`).join("")}
-            </select>
-            <div class="admin-management-actions">
-              <button type="submit" class="button primary small">Save changes</button>
-              <button type="button" class="button secondary small" data-action="cancel-edit">Cancel</button>
-            </div>
-          </form>
-        </article>
-      `).join("")}
-    </section>
-  ` : "";
-
-  box.innerHTML = groupedMarkup + uncategorizedMarkup;
 }
+async function loadUnpublishedResults() {
+  const box = $("unpublishedResults");
+  if (!box || !db) return;
+  box.innerHTML = '<p class="muted">Loading submitted ballots…</p>';
+  const [{data: categories, error: categoryError}, {data: votes, error: voteError}] = await Promise.all([
+    db.from("categories").select("id,name").order("sort_order"),
+    db.from("votes").select("category_id,nominee_id,categories(name),nominees(name)")
+  ]);
+  if (categoryError || voteError) {
+    box.innerHTML = `<p class="muted">Could not load voting results: ${escapeHtml((categoryError || voteError).message)}</p>`;
+    return;
+  }
+  if (!votes?.length) {
+    box.innerHTML = '<p class="muted">No submitted ballots yet. Results will appear here after votes are submitted.</p>';
+    return;
+  }
+  const counts = new Map();
+  votes.forEach(v => {
+    const key = `${v.category_id}::${v.nominee_id}`;
+    const row = counts.get(key) || {
+      category_id: v.category_id,
+      nominee_id: v.nominee_id,
+      category_name: v.categories?.name || categories?.find(c => c.id === v.category_id)?.name || "Category",
+      nominee_name: v.nominees?.name || "Unknown nominee",
+      votes: 0
+    };
+    row.votes++;
+    counts.set(key, row);
+  });
+  const grouped = (categories || [])
+    .map(category => ({category, rows: [...counts.values()].filter(r => r.category_id === category.id).sort((a,b) => b.votes-a.votes)}))
+    .filter(group => group.rows.length);
+
+  box.innerHTML =
+    `<div class="admin-results-status">Based on ${votes.length} submitted votes · ${$("votingToggle")?.checked ? "Voting is open — live totals" : "Voting is closed — final totals"}</div>` +
+    grouped.map(group => `<section class="admin-result-category"><h4>${escapeHtml(group.category.name)}</h4>${group.rows.map(row => `<div class="admin-result-row"><span>${escapeHtml(row.nominee_name)}${row.votes === group.rows[0].votes ? ' <strong class="result-leader">LEADING</strong>' : ''}</span><strong>${row.votes} vote${row.votes === 1 ? '' : 's'}</strong></div>`).join("")}</section>`).join("") +
+    `<form id="publishLiveResultsForm" class="admin-publish-results-form">
+      <h4>Publish these results</h4>
+      <p class="fine-print">Choose where these results should appear. The top-voted nominee in each category will be included; tied nominees will all be included.</p>
+      <label>Publish to
+        <select name="destination" required>
+          <option value="winners">Winners</option>
+          <option value="events">Events</option>
+        </select>
+      </label>
+      <label id="livePublishTitleLabel">Season title
+        <input name="title" required placeholder="e.g. Season 6">
+      </label>
+      <label>Month
+        <select name="month" required>${Array.from({length:12}, (_,i) => `<option value="${i+1}" ${i === new Date().getMonth() ? "selected" : ""}>${new Date(2000,i,1).toLocaleString("en",{month:"long"})}</option>`).join("")}</select>
+      </label>
+      <label>Year
+        <input name="year" type="number" min="2000" max="2100" required value="${new Date().getFullYear()}">
+      </label>
+      <button class="button primary small" type="submit">Publish results</button>
+    </form>`;
+
+  const publishForm = $("publishLiveResultsForm");
+  const destinationSelect = publishForm?.elements.namedItem("destination");
+  const titleLabel = $("livePublishTitleLabel");
+  const titleInput = publishForm?.elements.namedItem("title");
+  destinationSelect?.addEventListener("change", () => {
+    const isEvent = destinationSelect.value === "events";
+    titleLabel.firstChild.textContent = isEvent ? "Event title" : "Season title";
+    titleInput.placeholder = isEvent ? "e.g. TBB Awards Night" : "e.g. Season 6";
+  });
+
+  publishForm?.addEventListener("submit", async e => {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const button = form.querySelector('button[type="submit"]');
+    button.disabled = true;
+    const values = new FormData(form);
+    const destination = String(values.get("destination"));
+    const title = String(values.get("title") || "").trim();
+    const month = Number(values.get("month"));
+    const year = Number(values.get("year"));
+    const entries = grouped.flatMap(group =>
+      group.rows
+        .filter(row => row.votes === group.rows[0].votes)
+        .map(row => ({category_name: group.category.name, nominee_name: row.nominee_name}))
+    );
+
+    if (destination === "winners") {
+      const {data: edition, error: editionError} = await db.from("award_editions")
+        .insert({title, month, year, published:false})
+        .select("id").single();
+      if (editionError) {
+        message("adminMessage", editionError.message, true);
+        button.disabled = false;
+        return;
+      }
+      const {error: entriesError} = await db.from("winner_entries")
+        .insert(entries.map(entry => ({...entry, edition_id:edition.id})));
+      if (entriesError) {
+        message("adminMessage", `Season created as a draft, but winners could not be saved: ${entriesError.message}`, true);
+        button.disabled = false;
+        return;
+      }
+      const {error: publishError} = await db.from("award_editions")
+        .update({published:true}).eq("id", edition.id);
+      message("adminMessage", publishError?.message || "Voting results published to the Winners page.", !!publishError);
+    } else {
+      // Events use the existing events/event_winners tables. The selected month and
+      // year are represented by the first day of that month in the event_date field.
+      const eventDate = `${year}-${String(month).padStart(2,"0")}-01`;
+      const {data: event, error: eventError} = await db.from("events")
+        .insert({title, description:null, event_date:eventDate, published:false})
+        .select("id").single();
+      if (eventError) {
+        message("adminMessage", eventError.message, true);
+        button.disabled = false;
+        return;
+      }
+      const eventEntries = entries.map(entry => ({
+        event_id:event.id,
+        category_name:entry.category_name,
+        winner_name:entry.nominee_name
+      }));
+      const {error: entriesError} = await db.from("event_winners").insert(eventEntries);
+      if (entriesError) {
+        await db.from("events").delete().eq("id", event.id);
+        message("adminMessage", `Event could not be published because its result entries failed: ${entriesError.message}`, true);
+        button.disabled = false;
+        return;
+      }
+      const {error: publishError} = await db.from("events").update({published:true}).eq("id", event.id);
+      message("adminMessage", publishError?.message || "Voting results published to the Events page.", !!publishError);
+    }
+    await Promise.all([loadUnpublishedResults(), loadWinnerManagement(), loadWinners(), loadCommunityEvents()]);
+  });
+}
+
 async function requireAdmin() {
+  if (!db || !$("adminLogin") || !$("adminPanel")) return false;
   const {data:{session}}=await db.auth.getSession();
   const isAdmin=session?.user?.app_metadata?.role==="admin";
   $("adminLogin").classList.toggle("hidden",!!isAdmin);
@@ -530,18 +702,54 @@ async function requireAdmin() {
 
   await Promise.all([
     loadAdminMembers(),
-    loadGalleryAdmin()
+    loadGalleryAdmin(),
+    loadUnpublishedResults()
   ]);
 }
   return isAdmin;
 }
-$("loginForm").addEventListener("submit",async e=>{e.preventDefault();if(!db)return;const {error}=await db.auth.signInWithPassword({email:$("adminEmail").value,password:$("adminPassword").value});message("loginMessage",error?error.message:"Signed in.",!!error);await requireAdmin();});
-$("signOut").addEventListener("click",async()=>{await db.auth.signOut();await requireAdmin();});
-$("votingToggle").addEventListener("change",async e=>{const {error}=await db.from("site_settings").upsert({key:"voting_open",value:e.target.checked},{onConflict:"key"});message("adminMessage",error?.message||"Voting setting updated.",!!error);await loadVoting();});
-$("refreshData").addEventListener("click",loadPublic);
-$("loadMoreAdmins").addEventListener("click",()=>{directoryState.admins.visible+=DIRECTORY_PAGE_SIZE;renderDirectory("admins");});
-$("loadMoreMembers").addEventListener("click",()=>{directoryState.members.visible+=DIRECTORY_PAGE_SIZE;renderDirectory("members");});
-$("categoryForm").addEventListener("submit", async e => {
+$("loginForm")?.addEventListener("submit", async e => {
+  e.preventDefault();
+  const button = e.currentTarget.querySelector('button[type="submit"]');
+  const email = $("adminEmail")?.value.trim();
+  const password = $("adminPassword")?.value;
+  if (!db) {
+    message("loginMessage", !configured
+      ? "Supabase URL or publishable key is not configured in app.js."
+      : "Supabase library did not load. Check your internet connection and refresh.", true);
+    return;
+  }
+  if (!email || !password) {
+    message("loginMessage", "Enter both your admin email and password.", true);
+    return;
+  }
+  if (button) { button.disabled = true; button.textContent = "Signing in…"; }
+  message("loginMessage", "Connecting to Supabase…");
+  try {
+    const { data, error } = await db.auth.signInWithPassword({ email, password });
+    if (error) { message("loginMessage", error.message, true); return; }
+    if (!data?.session) {
+      message("loginMessage", "Supabase did not return a login session. Please try again.", true);
+      return;
+    }
+    const isAdmin = await requireAdmin();
+    message("loginMessage", isAdmin
+      ? "Signed in. Admin dashboard loaded."
+      : "Signed in, but this account does not have the admin role. Ask the project owner to verify app_metadata.role.",
+      !isAdmin);
+  } catch (error) {
+    console.error("TBB admin sign-in failed:", error);
+    message("loginMessage", error?.message || "Sign-in failed unexpectedly. Check the browser Console.", true);
+  } finally {
+    if (button) { button.disabled = false; button.textContent = "Sign in"; }
+  }
+});
+$("signOut")?.addEventListener("click",async()=>{await db.auth.signOut();await requireAdmin();});
+$("votingToggle")?.addEventListener("change",async e=>{const {error}=await db.from("site_settings").upsert({key:"voting_open",value:e.target.checked},{onConflict:"key"});message("adminMessage",error?.message||"Voting setting updated.",!!error);await loadVoting();});
+$("refreshData")?.addEventListener("click",loadPublic);
+$("loadMoreAdmins")?.addEventListener("click",()=>{directoryState.admins.visible+=DIRECTORY_PAGE_SIZE;renderDirectory("admins");});
+$("loadMoreMembers")?.addEventListener("click",()=>{directoryState.members.visible+=DIRECTORY_PAGE_SIZE;renderDirectory("members");});
+$("categoryForm")?.addEventListener("submit", async e => {
   e.preventDefault();
 
   const name = $("newCategory").value.trim();
@@ -562,7 +770,7 @@ $("categoryForm").addEventListener("submit", async e => {
   }
 });
 
-$("nomineeForm").addEventListener("submit", async e => {
+$("nomineeForm")?.addEventListener("submit", async e => {
   e.preventDefault();
 
   const selectedCategory = $("nomineeCategory").value;
@@ -593,12 +801,12 @@ $("nomineeForm").addEventListener("submit", async e => {
     $("nomineeCategory").value = selectedCategory;
   }
 });
-async function addDirectoryEntry(e,key){e.preventDefault();const prefix=key==="admins"?"admin":"member",state=directoryState[key],avatarInput=$(prefix+"Avatar").value.trim(),avatar=avatarInput?safeUrl(avatarInput):null;if(avatarInput&&!avatar){message("adminMessage","Enter a valid http:// or https:// avatar URL.",true);return;}const {error}=await db.from(state.table).insert({display_name:$(prefix+"Name").value.trim(),handle:$(prefix+"Handle").value.trim(),bio:$(prefix+"Bio").value.trim(),avatar_url:avatar});message("adminMessage",error?.message||`${state.label} profile added.`,!!error);if(!error){e.target.reset();await Promise.all([loadMembers(),loadAdminMembers()]);}}
-$("adminForm").addEventListener("submit",e=>addDirectoryEntry(e,"admins"));
-$("memberForm").addEventListener("submit",e=>addDirectoryEntry(e,"members"));
+async function addDirectoryEntry(e,key){e.preventDefault();const prefix=key==="admins"?"admin":"member",state=directoryState[key],avatarInput=$(prefix+"Avatar").value.trim(),avatar=avatarInput?safeUrl(avatarInput):null;if(avatarInput&&!avatar){message("adminMessage","Enter a valid http:// or https:// avatar URL.",true);return;}const {error}=await db.from(state.table).insert({display_name:$(prefix+"Name").value.trim(),handle:$(prefix+"Handle").value.trim(),bio:$(prefix+"Bio").value.trim(),avatar_url:avatar});message("adminMessage",error?.message||`${state.label} profile added.`,!!error);if(!error){e.target.reset();const note=$(prefix+"AvatarSelection");if(note)note.textContent="No avatar selected (optional).";await Promise.all([loadMembers(),loadAdminMembers()]);}}
+$("adminForm")?.addEventListener("submit",e=>addDirectoryEntry(e,"admins"));
+$("memberForm")?.addEventListener("submit",e=>addDirectoryEntry(e,"members"));
 ["adminManagementList","memberManagementList"].forEach(id=>{const box=$(id);if(!box)return;box.addEventListener("click",async e=>{const button=e.target.closest("button[data-action]");if(!button)return;const item=button.closest(".admin-member-item");if(!item)return;const key=item.dataset.directoryKey,state=directoryState[key];if(button.dataset.action==="edit"){item.querySelector(".admin-member-edit").classList.remove("hidden");item.querySelector('input[name="display_name"]').focus();}else if(button.dataset.action==="cancel"){item.querySelector(".admin-member-edit").classList.add("hidden");}else if(button.dataset.action==="delete"){const name=item.querySelector("h4")?.textContent||`this ${state.label}`;if(!confirm(`Delete ${name}? This cannot be undone.`))return;button.disabled=true;const {error}=await db.from(state.table).delete().eq("id",item.dataset.memberId);message("adminMessage",error?.message||`${state.label} deleted.`,!!error);if(error)button.disabled=false;else await Promise.all([loadMembers(),loadAdminMembers()]);}});box.addEventListener("submit",async e=>{const form=e.target.closest(".admin-member-edit");if(!form)return;e.preventDefault();const item=form.closest(".admin-member-item"),key=item.dataset.directoryKey,state=directoryState[key],values=new FormData(form),avatarInput=String(values.get("avatar_url")||"").trim(),avatar=avatarInput?safeUrl(avatarInput):null;if(avatarInput&&!avatar){message("adminMessage","Enter a valid http:// or https:// avatar URL.",true);return;}const updates={display_name:String(values.get("display_name")||"").trim(),handle:String(values.get("handle")||"").trim(),bio:String(values.get("bio")||"").trim(),avatar_url:avatar,visible:form.elements.visible.checked};if(!updates.display_name){message("adminMessage","Display name is required.",true);return;}const save=form.querySelector('button[type="submit"]');save.disabled=true;const {error}=await db.from(state.table).update(updates).eq("id",item.dataset.memberId);message("adminMessage",error?.message||`${state.label} profile updated.`,!!error);save.disabled=false;if(!error)await Promise.all([loadMembers(),loadAdminMembers()]);});});
-$("announcementForm").addEventListener("submit",async e=>{e.preventDefault();const {error}=await db.from("announcements").insert({title:$("announcementTitle").value.trim(),body:$("announcementBody").value.trim(),published:true,is_pinned:$("announcementPinned").checked});message("adminMessage",error?.message||"Announcement published.",!!error);if(!error){e.target.reset();await loadAnnouncements();}});
-$("galleryAlbumForm").addEventListener("submit", async e => {
+$("announcementForm")?.addEventListener("submit",async e=>{e.preventDefault();const {error}=await db.from("announcements").insert({title:$("announcementTitle").value.trim(),body:$("announcementBody").value.trim(),published:true,is_pinned:$("announcementPinned").checked});message("adminMessage",error?.message||"Announcement published.",!!error);if(!error){e.target.reset();await loadAnnouncements();}});
+$("galleryAlbumForm")?.addEventListener("submit", async e => {
   e.preventDefault();
 
   const albumId = $("galleryAlbumId").value;
@@ -738,9 +946,9 @@ for (const image of selectedImages) {
   await Promise.all([loadGallery(), loadGalleryAdmin()]);
 });
 
-$("galleryAlbumCancelButton").addEventListener("click", resetGalleryAlbumForm);
+$("galleryAlbumCancelButton")?.addEventListener("click", resetGalleryAlbumForm);
 
-$("galleryAdminManagementList").addEventListener("click", async e => {
+$("galleryAdminManagementList")?.addEventListener("click", async e => {
   const button = e.target.closest("button[data-action]");
   if (!button) return;
 
@@ -809,14 +1017,25 @@ $("galleryAdminManagementList").addEventListener("click", async e => {
     }
   }
 });
-$("editionForm").addEventListener("submit",async e=>{
+$("editionForm")?.addEventListener("submit",async e=>{
   e.preventDefault();
   const payload={title:$("editionTitle").value.trim(),month:Number($("editionMonth").value),year:Number($("editionYear").value),published:false};
   const {error}=await db.from("award_editions").insert(payload);
   message("adminMessage",error?.message||"Draft season created. Add its winners below, then publish it from Manage seasons and winners.",!!error);
   if(!error){e.target.reset();await loadWinnerManagement();}
 });
-if(db){db.auth.onAuthStateChange(()=>requireAdmin());loadPublic();requireAdmin();}else{unavailable();$("adminLogin").classList.add("hidden");$("adminPanel").classList.remove("hidden");$("adminPanel").innerHTML='<p><strong>Setup required:</strong> add your Supabase URL and anon key in <code>app.js</code>, then refresh.</p>';}
+if(db){
+  db.auth.onAuthStateChange(()=>requireAdmin());
+  loadPublic();
+  requireAdmin();
+}else{
+  unavailable();
+  if($("adminLogin")) $("adminLogin").classList.add("hidden");
+  if($("adminPanel")){
+    $("adminPanel").classList.remove("hidden");
+    $("adminPanel").innerHTML='<p><strong>Setup required:</strong> Supabase is not configured.</p>';
+  }
+}
 
 // --- Admin management: announcements, award seasons/winners, and one homepage event ---
 let eventCountdownInterval = null;
@@ -863,7 +1082,7 @@ async function loadEventManagement() {
   if (error) { box.innerHTML = `<p class="muted">Could not load event: ${escapeHtml(error.message)}. Run the event countdown SQL migration.</p>`; return; }
   if (!data) { box.innerHTML = '<p class="muted">No event countdown is currently set.</p>'; return; }
   box.innerHTML = `<article class="admin-management-item"><div class="admin-management-head"><div><h4>${escapeHtml(data.title)}</h4><p>${escapeHtml(data.description || '')}</p><small class="fine-print">${new Date(data.event_at).toLocaleString()}</small></div><div class="admin-management-actions"><button type="button" class="button secondary small" id="editEventButton">Edit</button><button type="button" class="button secondary small" id="deleteEventButton">Delete</button></div></div></article>`;
-  $("editEventButton").addEventListener("click", () => {
+  $("editEventButton")?.addEventListener("click", () => {
     $("eventTitleInput").value = data.title;
     $("eventDescriptionInput").value = data.description || "";
     const date = new Date(data.event_at);
@@ -871,7 +1090,7 @@ async function loadEventManagement() {
     $("eventDateTimeInput").value = local;
     $("eventTitleInput").focus();
   });
-  $("deleteEventButton").addEventListener("click", async () => {
+  $("deleteEventButton")?.addEventListener("click", async () => {
     if (!confirm("Delete the homepage event countdown?")) return;
     const {error: deleteError} = await db.from("homepage_event").delete().eq("id", true);
     message("adminMessage", deleteError?.message || "Event countdown deleted.", !!deleteError);
@@ -1023,8 +1242,16 @@ async function loadHomepageEvent() {
   const section = $("eventCountdownSection");
   if (!section || !db) return;
   const {data, error} = await db.from("homepage_event").select("title,description,event_at").eq("id", true).maybeSingle();
-  if (error || !data) { section.classList.add("hidden"); if (eventCountdownInterval) clearInterval(eventCountdownInterval); return; }
-  section.querySelector(".event-countdown-clock").innerHTML = '<div><strong id="eventDays">00</strong><span>Days</span></div><div><strong id="eventHours">00</strong><span>Hours</span></div><div><strong id="eventMinutes">00</strong><span>Minutes</span></div><div><strong id="eventSeconds">00</strong><span>Seconds</span></div>';
+  if (error || !data) {
+    section.classList.remove("hidden");
+    $("eventCountdownTitle").textContent = "Countdown not set yet";
+    $("eventCountdownDescription").textContent = "The next community event countdown will appear here once an admin sets its date and time.";
+    $("eventCountdownDate").textContent = "";
+    $("eventCountdownClock").innerHTML = '<div><strong>--</strong><span>DAYS</span></div><div><strong>--</strong><span>HOURS</span></div><div><strong>--</strong><span>MINS</span></div><div><strong>--</strong><span>SECS</span></div>';
+    if (eventCountdownInterval) clearInterval(eventCountdownInterval);
+    return;
+  }
+  $("eventCountdownClock").innerHTML = '<div><strong id="eventDays">00</strong><span>Days</span></div><div><strong id="eventHours">00</strong><span>Hours</span></div><div><strong id="eventMinutes">00</strong><span>Minutes</span></div><div><strong id="eventSeconds">00</strong><span>Seconds</span></div>';
   $("eventCountdownTitle").textContent = data.title;
   $("eventCountdownDescription").textContent = data.description || "";
   const eventDate = new Date(data.event_at);
@@ -1035,7 +1262,7 @@ async function loadHomepageEvent() {
     const remaining = eventDate.getTime() - Date.now();
     const clock = $("eventCountdownClock");
     if (remaining <= 0) {
-      section.querySelector(".event-countdown-clock").innerHTML = '<div class="event-ended">EVENT STARTED</div>';
+      $("eventCountdownClock").innerHTML = '<div class="event-ended">EVENT STARTED</div>';
       clearInterval(eventCountdownInterval);
       return;
     }
