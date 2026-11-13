@@ -1,92 +1,61 @@
-# TTPD BLOCKED BILLIE — Community Hub
+[README.md](https://github.com/user-attachments/files/34820035/README.md)
+# TTPD BLOCKED BILLIE — Stage 14 cross-page JavaScript compatibility fix
 
-A static community website with four public areas:
+This stage addresses a major integration issue discovered during static QA: every page loads the same `app.js`, but the previous script assumed that voting, winners, directory, news and admin elements existed on every page.
 
-1. **Voting** — multiple award categories on one page; one ballot per browser ID.
-2. **Results / previous winners** — only award editions marked as published are public.
-3. **Member directory** — profiles are created and maintained by admins only.
-4. **Website newsletter** — an announcement archive on the website; no email collection or email delivery.
+## Fixes
+- `loadPublic()` now initializes only the data loaders whose target elements exist on the current page.
+- Voting and winners loaders check their required page elements before manipulating them.
+- Directory count labels are optional, so the Members and Admins pages can share the same directory loader.
+- News ticker is optional on pages that show announcements without a ticker.
+- `requireAdmin()` returns safely on public pages without admin login/dashboard elements.
+- Top-level page-specific event listeners use optional DOM checks so missing controls on other pages do not stop script initialization.
+- Setup messaging now checks whether the voting status element exists.
 
-The admin dashboard also lets admins add categories, nominees, members and announcements, and open/close voting.
+## Validation performed
+- JavaScript syntax checked with Node.js (`node --check`).
+- All existing page files and database logic retained, apart from the DOM compatibility guards above.
 
-## Free setup
+## Still needs browser / database testing
+Static checks cannot verify Supabase RLS policies, real authentication, RPC behavior, or actual browser interactions. Test in a staging copy before production.
 
-- **Supabase Free**: database, authentication and row-level security.
-- **Cloudflare Pages Free** (or GitHub Pages): static website hosting.
-- No custom backend server and no paid newsletter service are required for the website-announcement version.
+## Preview
+Extract the ZIP and open `index.html`. Supabase-backed sections require internet access.
 
-Free-plan limits and terms can change; check the providers' current plan pages before launch.
+## Production caution
+No live website or database was changed. Do not run the old `schema.sql` against production. Verify RLS and make a verified database backup before any migration or deployment.
 
-## 1. Create Supabase project
 
-1. Create a project at https://supabase.com.
-2. Open **SQL Editor**, create a query, paste all of `supabase/schema.sql`, and run it.
-3. Go to **Project Settings → API**. Copy the Project URL and anon/public key.
-4. Open `app.js` and replace:
-   - `YOUR_SUPABASE_PROJECT_URL`
-   - `YOUR_SUPABASE_ANON_KEY`
-5. Never put a `service_role` key in browser code.
+## Stage 16 additions
+- Hardened the shared gallery-back, mobile-menu and sign-out handlers against missing page elements or an unconfigured database.
+- Added `HTML-INTEGRATION-AUDIT.md` covering duplicate IDs, missing local CSS/JS assets and broken local page links.
+- These are static checks only; browser rendering and Supabase workflows remain unverified.
 
-## 2. Create the admin account
 
-1. In Supabase, open **Authentication → Users** and create an admin user (or sign up through an enabled auth method).
-2. Set that user's `app_metadata` role to `admin` using the Supabase dashboard or a trusted server-side admin tool. The role must be in **app_metadata**, not user-editable `user_metadata`.
-3. Sign in through the Admin section of the website.
+## Stage 17 — Staging QA pack
+This stage adds a detailed manual test plan and a results template. No browser session, Supabase account, or live database was available for an end-to-end test in this step. The documents distinguish tests to perform from checks already completed; do not interpret the checklist as passed.
 
-The browser client cannot grant itself admin access. Do not expose the Supabase service-role key to the website.
 
-## 3. Add the site content
+## Stage 18 — Repeatable QA script
+Run `python3 qa_check.py` from the extracted folder to repeat the static HTML checks. See `RUN-STATIC-QA.md` for scope and limitations. A passing static check is not an end-to-end or security sign-off.
 
-1. Sign in to Admin.
-2. Add categories, then add nominees to each category.
-3. Add member profiles. Profiles are admin-managed; there is no public profile registration.
-4. Publish announcements. They appear in the website newsletter section.
-5. Turn voting on when the ballot is ready; turn it off when voting ends.
 
-## 4. Publish previous winners
+## Stage 19 — Homepage and Winners corrections
+- Added a dedicated SVG TBB crest to the shared top header.
+- Styled Admins and Members as bordered pill buttons.
+- Replaced the decorative Memories / Community / Together strip with the main community countdown. When no date is configured, the page clearly says so rather than showing fake zeroes.
+- Rebuilt the six homepage navigation cards into the intended layout: Voting full width; Winners and Events side by side; Gallery tall on the left; About Us and Admin Page stacked on the right.
+- Changed Winners into a two-choice hub: Previous Winners and Dashboard. Added individual `previous-winners.html` and `winners-dashboard.html` pages.
+- Fixed countdown rendering to target the actual `eventCountdownClock` element.
 
-The admin dashboard creates a draft edition. To attach winners, use Supabase **SQL Editor** while signed in as the project owner. Replace the sample values with the edition UUID and winners:
+No live website or database was changed. The countdown requires an admin-configured `homepage_event` record. Browser and Supabase workflows still require staging tests.
 
-```sql
--- Find the draft edition ID:
-select id, title, year from public.award_editions order by created_at desc;
 
--- Add winners (replace the edition UUID and sample names):
-insert into public.winner_entries (edition_id, category_name, nominee_name)
-values
-('PASTE-EDITION-UUID-HERE', 'Best Admin', '@winner'),
-('PASTE-EDITION-UUID-HERE', 'Best New Member', '@winner');
+## Stage 20 — palette, layout, logo slot and data-loader resilience
+- Updated the homepage palette to match the olive/khaki metallic countdown treatment and burgundy/blue navigation cards in the supplied reference.
+- Fixed grid placement with explicit named areas and reset the old grid-column/grid-row rules that were overriding Gallery's two-row position.
+- Removed the generated emblem from the header. Add your own `site-logo.png` as described in `ADD-YOUR-LOGO.md`.
+- Public data loading now runs only loaders relevant to elements on the current page; optional DOM elements are guarded and individual loader failures no longer abort all other page data.
+- Added a notice when opened through `file://` and instructions for running a local web server in `OPEN-LOCAL-WITH-DATA.md`.
 
--- Publish only after checking all winner entries:
-update public.award_editions
-set published = true
-where id = 'PASTE-EDITION-UUID-HERE';
-```
-
-To correct a published edition, update its winner entries in SQL and keep `published=true`. Unpublish it first if you want to hide it while editing.
-
-## 5. Deploy for free
-
-### Cloudflare Pages (simple option)
-1. Put the files in a GitHub repository.
-2. In Cloudflare, create a Pages project and connect the repository.
-3. Framework preset: **None**. Build command: leave blank. Output directory: `/` (repository root).
-4. Deploy. Your site will receive a `*.pages.dev` address.
-
-You can also use GitHub Pages for this static site.
-
-## Security and limitations — read before launch
-
-- **One ballot per browser is not strong identity verification.** The browser ID is stored in local storage. Clearing site data, using private browsing, or using another device can create another ID. This starter is suitable for informal community voting, not high-stakes or fraud-resistant elections.
-- Results are not shown as live vote counts. Ballots and votes are private under row-level security; only admins can query them. Public visitors see only editions and winners explicitly published by an admin.
-- Member profiles are admin-only. Do not publish private contact details, real names or information members have not consented to share.
-- Website newsletter means an on-site announcements feed. It does not send email. Email subscriptions and automated email delivery are deliberately excluded to keep this version free and avoid collecting email addresses.
-- Use HTTPS hosting. Keep admin credentials private. Never publish the Supabase service-role key.
-- The Supabase `anon` key is designed to be public in a browser app; row-level security is what protects the database.
-
-## Files
-
-- `index.html` — page structure and sections
-- `styles.css` — visual design and responsive layout
-- `app.js` — Supabase connection, public loading, voting and admin actions
-- `supabase/schema.sql` — tables, policies and ballot submission function
+No live site or database was changed. Supabase data still requires a working connection, valid policies and a browser-served preview; the local server does not guarantee database authorization.
