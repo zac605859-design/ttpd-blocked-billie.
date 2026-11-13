@@ -3,278 +3,76 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="TTPD BLOCKED BILLIE — community awards, members, winners and announcements.">
-  <title>TTPD BLOCKED BILLIE GROUPCHAT</title>
+  <meta name="description" content="TTPD BLOCKED BILLIE — a community hub for Swifties.">
+  <title>TTPD BLOCKED BILLIE — Home</title>
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="homepage-preview.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
-<body>
-  <header class="site-header">
-    <a class="brand" href="#home" aria-label="TTPD BLOCKED BILLIE home">
-      <span class="brand-mark">TBB</span>
-      <span>TTPD BLOCKED BILLIE GROUPCHAT</span>
-    </a>
-    <button class="menu-toggle" id="menuToggle" aria-label="Toggle navigation">☰</button>
-    <nav id="mainNav">
-      <a href="#vote">Voting</a>
-<a href="#winners">Winners</a>
-<a href="#events">Events</a>
-<a href="#scoreboard">Scoreboard</a>
-<a href="#admins">Admins</a>
-<a href="#members">Members</a>
-<a href="#newsletter">News</a>
-<a href="#gallery">Gallery</a>
-      <a class="admin-link" href="#admin">Admin</a>
-    </nav>
+<body class="home-preview">
+  <div id="localPreviewNotice" class="local-preview-notice hidden" role="status">You are viewing a local file. For database content, open this folder through a local web server or a staging website.</div>
+  <div id="pinnedNewsTicker" class="pinned-news-ticker floating-news hidden" aria-label="Pinned community news"></div>
+
+  <header class="home-topbar">
+    <button class="news-bell" type="button" aria-label="News and updates" onclick="document.getElementById('newsPanel').classList.toggle('open')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg></button>
+    <a class="home-emblem" href="index.html" aria-label="TTPD BLOCKED BILLIE home"><img class="uploaded-site-logo" src="./site-logo.png" alt="TTPD BLOCKED BILLIE logo" onerror="this.style.display='none';this.parentElement.classList.add('logo-not-added')"><span class="logo-fallback">ADD LOGO</span></a>
+    <div class="topbar-actions">
+      <a href="admins.html">ADMINS</a>
+      <a href="members.html">MEMBERS</a>
+    </div>
   </header>
 
-  <div id="pinnedNewsTicker" class="pinned-news-ticker hidden" aria-label="Pinned community news"></div>
-
-  <main id="home">
-    <section class="hero">
-      <div class="eyebrow"></div>
-      <h1><span class="welcome-text">Welcome to</span><br><em>TTPD BLOCKED BILLIE WEB</em></h1>
-      <p>Official website for everything.</p>
-      <div class="hero-actions">
-  <a class="button primary" href="#vote">Voting</a>
-  <a class="button secondary" href="#winners">Winners</a><a class="button secondary" href="#events">Events</a>
-<a class="button secondary" href="#scoreboard">Scoreboard</a>
-  <a class="button secondary" href="#admins">Admins</a>
-  <a class="button secondary" href="#members">Members</a>
-  <a class="button secondary" href="#newsletter">News</a>
-  <a class="button secondary" href="#gallery">Gallery</a>
-</div>
-      <div class="hero-note">Safe Space For Swifties.</div>
-    </section>
-
-    <section id="eventCountdownSection" class="event-countdown-section hidden"><div class="event-countdown-copy"><div class="eyebrow">UP NEXT</div><h2 id="eventCountdownTitle"></h2><p id="eventCountdownDescription"></p><div id="eventCountdownDate" class="event-countdown-date"></div></div><div id="eventCountdownClock" class="event-countdown-clock"></div></section>
-
-    <section class="section" id="vote">
-      <div class="section-heading"><div><div class="eyebrow">TBB GRAMMYS 2026</div><h2>VOTING BALLOT</h2></div><span class="section-aside" id="votingStatus">Loading status…</span></div>
-      <p class="section-intro">Choose one nominee in each category.</p>
-      <div id="votingClosed" class="notice hidden">VOTING CLOSED</div>
-      <form id="ballotForm"><div id="categories" class="category-grid"><p class="muted">Loading categories…</p></div><button class="button primary" type="submit" id="submitBallot">Submit ballot</button><p id="voteMessage" class="form-message" role="status"></p></form>
-      <p class="fine-print">Result will be available on Friday. Check Countdown Page/ NEWSLETTERfor more info.</p>
-    </section>
-
-    <section class="section dark-section" id="winners">
-      <div class="section-heading"><div><div class="eyebrow"></div><h2>Results & previous winners</h2></div><span class="section-aside">Published by admins</span></div>
-      <p class="section-intro">Browse the winners and results from past award editions.</p>
-      <div id="winnerSeasonOptions" class="winner-season-options"><p class="muted">Loading seasons…</p></div><div id="winnerSeasonResults" class="winner-season-results" aria-live="polite"><p class="muted">Select a season to view its winners.</p></div>
-    </section><!-- EVENTS ARCHIVE -->
-<section class="section" id="events">
-  <div class="section-heading">
-    <div>
-      <div class="eyebrow">GC EVENTS</div>
-      <h2>EVENT DASHBOARD</h2>
+  <aside class="news-panel" id="newsPanel" aria-label="News and updates">
+    <div class="news-panel-head">
+      <div><span class="home-kicker">COMMUNITY BULLETIN</span><h2>NEWS & UPDATES</h2></div>
+      <button type="button" aria-label="Close news" onclick="document.getElementById('newsPanel').classList.remove('open')">×</button>
     </div>
-    <span class="section-aside"></span>
-  </div>
-  <p class="section-intro">
-    Browse various events in our GC.
-  </p>
-  <div id="eventsGrid" class="event-grid">
-    <p class="muted">Loading events…</p>
-  </div>
-</section>
-
-<!-- COMMUNITY SCOREBOARD -->
-<section class="section dark-section" id="scoreboard">
-  <div class="section-heading">
-    <div>
-      <div class="eyebrow">ALL-TIME RANKINGS</div>
-      <h2>AWARD WINNERS</h2>
+    <div id="announcements" class="announcement-list">
+      <p class="muted">Loading announcements…</p>
     </div>
-    <span class="section-aside">Updated every season</span>
-  </div>
-  <p class="section-intro">
-    Members ranked by the total number of event awards they have won.
-  </p>
- <div class="scoreboard-table">
-  <div class="scoreboard-header">
-    <span>INDEX</span>
-    <span>RANK</span>
-    <span>NAME</span>
-    <span>WINS</span>
-  </div>
+    <a class="text-link" href="news.html">ALL NEWS & UPDATES ↗</a>
+  </aside>
 
-  <div id="scoreboardGrid" class="scoreboard-grid">
-    <p class="muted">Loading scoreboard…</p>
-  </div>
-</div>
-</section>
-
-    <section class="section" id="admins">
-      <div class="section-heading"><div><div class="eyebrow"></div><h2>ADMINS <span id="adminCount">(0)</span></h2></div><span class="section-aside"></span></div>
-      <p class="section-intro"></p>
-      <div id="adminGrid" class="member-grid"><p class="muted">Loading admin profiles…</p></div>
-      <div class="member-load-more-wrap"><button id="loadMoreAdmins" class="button secondary hidden" type="button">Show more</button></div>
-    </section>
-    <section class="section" id="members">
-      <div class="section-heading"><div><div class="eyebrow"></div><h2>MEMBERS <span id="memberCount">(0)</span></h2></div><span class="section-aside"></span></div>
-      <p class="section-intro"></p>
-      <div id="memberGrid" class="member-grid"><p class="muted">Loading member profiles…</p></div>
-      <div class="member-load-more-wrap"><button id="loadMoreMembers" class="button secondary hidden" type="button">Show more</button></div>
+  <main class="home-shell">
+    <section class="home-intro">
+      <div class="home-kicker">THE OFFICIAL COMMUNITY HUB</div>
+      <h1>GROUP<span>CHAT</span></h1>
+      <p>A safe place for Swifties.</p>
     </section>
 
-    <section class="section newsletter-section" id="newsletter">
-      <div><div class="eyebrow"></div><h2>NEWSLETTER</h2><p class="section-intro">Announcements, event updates and important community notes.</p></div>
-      <div id="announcements" class="announcement-list"><p class="muted">Loading announcements…</p></div>
-    </section>
-
-
-    <section class="section" id="gallery">
-  <div class="section-heading">
-    <div>
-      <div class="eyebrow"></div>
-      <h2>GALLERY</h2>
-    </div>
-    <span class="section-aside">Moments & memories</span>
-  </div>
-
-  <p class="section-intro">
-    A collection of important moments for the GC.
-  </p>
-
-  <!-- Season album boxes -->
-  <div id="galleryAlbumsGrid" class="gallery-albums-grid">
-    <p class="muted">Loading seasons…</p>
-  </div>
-
-  <!-- Expanded season album -->
-  <div id="galleryAlbumViewer" class="gallery-album-viewer hidden">
-    <button type="button" id="galleryBackButton" class="button secondary small">
-      ← All seasons
-    </button>
-
-    <h3 id="galleryAlbumViewerTitle">Season 1</h3>
-
-    <div id="galleryAlbumViewerContent" class="gallery-album-images">
-    </div>
-  </div>
-</section>
-
-    
-    <section class="section admin-section" id="admin">
-      <div class="section-heading"><div><div class="eyebrow">PRIVATE AREA</div><h2>Admin dashboard</h2></div><span class="section-aside">Admin access only</span></div>
-      <div id="adminLogin" class="admin-panel">
-        <p>Sign in with the admin account configured in Supabase.</p>
-        <form id="loginForm" class="login-form"><input id="adminEmail" type="email" placeholder="Admin email" required><input id="adminPassword" type="password" placeholder="Password" required><button class="button primary" type="submit">Sign in</button></form>
-        <p id="loginMessage" class="form-message" role="status"></p>
+    <section id="eventCountdownSection" class="home-up-next" aria-label="Main community countdown">
+      <div class="up-next-copy">
+        <span class="home-kicker">COMMUNITY COUNTDOWN</span>
+        <h2 id="eventCountdownTitle">Countdown not set yet</h2>
+        <p id="eventCountdownDescription">The next community event countdown will appear here once an admin sets its date and time.</p>
+        <div id="eventCountdownDate" class="up-next-date"></div>
       </div>
-      <div id="adminPanel" class="admin-panel hidden">
-        <div class="admin-top"><p>You are signed in as an administrator.</p><button class="button secondary small" id="signOut">Sign out</button></div>
-        <div class="admin-grid">
-          <div class="admin-card"><h3>Voting controls</h3><label class="switch-line"><input type="checkbox" id="votingToggle"> Voting is open</label><button class="button secondary small" id="refreshData">Refresh public site</button></div>
-          <div class="admin-card"><h3>Add a category</h3><form id="categoryForm"><input id="newCategory" placeholder="Category name" required><button class="button secondary small">Add category</button></form></div>
-          <div class="admin-card"><h3>Add a nominee</h3><form id="nomineeForm"><select id="nomineeCategory" required></select><input id="newNominee" placeholder="Nominee name / @handle" required><button class="button secondary small">Add nominee</button></form></div><div class="admin-card admin-wide">
-  <h3>Manage voting categories</h3>
-  <div id="categoryManagementList" class="admin-management-list">
-    <p class="muted">Loading categories…</p>
-  </div>
-</div>
-
-<div class="admin-card admin-wide">
-  <h3>Manage nominees</h3>
-  <div id="nomineeManagementList" class="admin-management-list">
-    <p class="muted">Loading nominees…</p>
-  </div>
-</div>
-          <div class="admin-card"><h3>Add an admin</h3><form id="adminForm"><input id="adminName" placeholder="Display name" required><input id="adminHandle" placeholder="@handle"><input id="adminBio" placeholder="Short bio"><input id="adminAvatar" placeholder="Avatar image URL (optional)"><button class="button secondary small">Add admin</button></form></div>
-          <div class="admin-card member-management-card"><h3>Manage admins</h3><div id="adminManagementList" class="member-management-list"><p class="muted">Sign in to load admins.</p></div></div>
-          <div class="admin-card"><h3>Add a member</h3><form id="memberForm"><input id="memberName" placeholder="Display name" required><input id="memberHandle" placeholder="@handle"><input id="memberBio" placeholder="Short bio"><input id="memberAvatar" placeholder="Avatar image URL (optional)"><button class="button secondary small">Add member</button></form></div>
-          <div class="admin-card member-management-card"><h3>Manage members</h3><div id="memberManagementList" class="member-management-list"><p class="muted">Sign in to load members.</p></div></div>
-          <div class="admin-card admin-wide"><h3>Manage announcements</h3><div id="announcementManagementList" class="admin-management-list"></div></div>
-          <div class="admin-card"><h3>Publish an announcement</h3><form id="announcementForm"><input id="announcementTitle" placeholder="Announcement title" required><textarea id="announcementBody" placeholder="Write the announcement…" required></textarea><label class="switch-line"><input type="checkbox" id="announcementPinned"> Pin this announcement on the homepage</label><button class="button secondary small">Publish</button></form></div>
-          <div class="admin-card admin-wide">
-  <h3>Manage Gallery Seasons</h3>
-
-  <form id="galleryAlbumForm">
-    <input type="hidden" id="galleryAlbumId">
-
-    <input
-      id="galleryAlbumTitle"
-      placeholder="Season name (e.g. Season 1)"
-      required
-    >
-
-    <p class="fine-print">
-      Add between 1 and 4 images. Leave unused image fields empty.
-    </p>
-
-    <div class="gallery-admin-image-fields">
-      <label>Image 1 URL
-        <input id="galleryImageUrl1" type="url" placeholder="https://...">
-      </label>
-      <input id="galleryCaption1" placeholder="Image 1 caption (optional)">
-
-      <label>Image 2 URL
-        <input id="galleryImageUrl2" type="url" placeholder="https://...">
-      </label>
-      <input id="galleryCaption2" placeholder="Image 2 caption (optional)">
-
-      <label>Image 3 URL
-        <input id="galleryImageUrl3" type="url" placeholder="https://...">
-      </label>
-      <input id="galleryCaption3" placeholder="Image 3 caption (optional)">
-
-      <label>Image 4 URL
-        <input id="galleryImageUrl4" type="url" placeholder="https://...">
-      </label>
-      <input id="galleryCaption4" placeholder="Image 4 caption (optional)">
-    </div>
-
-    <button type="submit" class="button secondary small" id="galleryAlbumSaveButton">
-      Create season
-    </button>
-
-    <button type="button" class="button secondary small hidden" id="galleryAlbumCancelButton">
-      Cancel editing
-    </button>
-  </form>
-
-  <div class="divider"></div>
-
-  <h3>Existing Gallery Seasons</h3>
-  <div id="galleryAdminManagementList">
-    <p class="muted">Sign in to manage seasons.</p>
-  </div>
-</div>
-          <div class="admin-card admin-wide"><h3>Manage seasons and winners</h3><div id="winnerManagementList" class="admin-management-list"></div><p class="fine-print">Select a draft or published season, then add each category and its winner. You can edit or delete entries below.</p><form id="winnerEntryForm"><select id="winnerEntrySeason" required></select><input id="winnerEntryCategory" placeholder="Category name" required><input id="winnerEntryName" placeholder="Winner name / @handle" required><button class="button secondary small">Add winner</button></form></div>
-          <div class="admin-card admin-wide"><h3>Homepage event countdown</h3><form id="eventForm"><input id="eventTitleInput" placeholder="Event title" required><textarea id="eventDescriptionInput" placeholder="Event description"></textarea><label>Event date and time<input id="eventDateTimeInput" type="datetime-local" required></label><button class="button secondary small">Save countdown</button></form><div id="eventManagement"></div></div><div class="admin-card admin-wide">
-  <h3>Create a community event</h3>
-  <form id="communityEventForm">
-    <input id="communityEventTitle" placeholder="Event title" required>
-    <textarea id="communityEventDescription" placeholder="Event description"></textarea>
-    <label>
-      Event date
-      <input id="communityEventDate" type="date">
-    </label>
-    <button class="button secondary small" type="submit">Create event</button>
-  </form>
-  <div id="eventManagementList" class="admin-management-list"></div>
-</div>
-
-<div class="admin-card admin-wide">
-  <h3>Add event winners</h3>
-  <form id="eventWinnerForm">
-    <select id="eventWinnerEvent" required>
-      <option value="">Select event</option>
-    </select>
-    <input id="eventWinnerCategory" placeholder="Category (e.g. Best Album)" required>
-    <input id="eventWinnerName" placeholder="Winner name / @handle" required>
-    <button class="button secondary small" type="submit">Add winner</button>
-  </form>
-  <div id="eventWinnerManagementList" class="admin-management-list"></div>
-</div>
-          <div class="admin-card"><h3>Publish award edition</h3><form id="editionForm"><input id="editionTitle" placeholder="Season title (e.g. Season 4 Awards)" required><select id="editionMonth" required><option value="">Month</option><option value="1">January</option><option value="2">February</option><option value="3">March</option><option value="4">April</option><option value="5">May</option><option value="6">June</option><option value="7">July</option><option value="8">August</option><option value="9">September</option><option value="10">October</option><option value="11">November</option><option value="12">December</option></select><input id="editionYear" type="number" min="2000" max="2100" placeholder="Year" required><button class="button secondary small">Create draft season</button></form><p class="fine-print">Create the season here, add its category winners in Manage seasons and winners, then use Publish on that season. Draft seasons stay hidden from the public Winners page.</p></div>
-        </div>
-        <p id="adminMessage" class="form-message" role="status"></p>
+      <div class="home-countdown-wrap">
+        <span class="home-kicker">COUNTDOWN</span>
+        <div id="eventCountdownClock" class="home-countdown-clock"><div><strong>--</strong><span>DAYS</span></div><div><strong>--</strong><span>HOURS</span></div><div><strong>--</strong><span>MINS</span></div><div><strong>--</strong><span>SECS</span></div></div>
       </div>
     </section>
+
+
+
+
+    <nav class="home-card-grid" aria-label="Explore the website">
+      <a class="home-nav-card card-voting" href="voting.html"><span>01 / PARTICIPATE</span><svg class="nav-icon" viewBox="0 0 48 48" aria-hidden="true"><rect x="9" y="11" width="30" height="31" rx="4"/><path d="M16 7v9M32 7v9M9 20h30M17 29l5 5 10-11"/></svg><strong>VOTING</strong><i>↗</i></a>
+      <a class="home-nav-card card-winners" href="winners.html"><span>02 / THE RESULTS</span><svg class="nav-icon" viewBox="0 0 48 48" aria-hidden="true"><path d="M15 8h18v9c0 9-4 14-9 14s-9-5-9-14zM15 12H7v4c0 7 4 10 11 10M33 12h8v4c0 7-4 10-11 10M24 31v8M16 41h16"/></svg><strong>WINNERS</strong><i>↗</i></a>
+      <a class="home-nav-card card-events" href="events.html"><span>03 / WHAT'S NEXT</span><svg class="nav-icon" viewBox="0 0 48 48" aria-hidden="true"><rect x="7" y="11" width="34" height="31" rx="4"/><path d="M15 6v10M33 6v10M7 20h34M16 27h5M27 27h5M16 34h5"/></svg><strong>EVENTS</strong><i>↗</i></a>
+      <a class="home-nav-card card-gallery" href="gallery.html"><span>04 / THE ARCHIVE</span><svg class="nav-icon" viewBox="0 0 48 48" aria-hidden="true"><rect x="5" y="8" width="38" height="32" rx="4"/><circle cx="17" cy="19" r="3"/><path d="m8 35 11-10 8 7 7-8 6 6"/></svg><strong>GALLERY</strong><i>↗</i></a>
+      <a class="home-nav-card card-about" href="about.html"><span>05 / OUR STORY</span><svg class="nav-icon" viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="18"/><path d="M24 21v12M24 14h.02"/></svg><strong>ABOUT US</strong><i>↗</i></a>
+      <a class="home-nav-card card-admin" href="admin.html"><span>06 / PRIVATE ACCESS</span><svg class="nav-icon" viewBox="0 0 48 48" aria-hidden="true"><rect x="9" y="21" width="30" height="22" rx="4"/><path d="M15 21v-7a9 9 0 0 1 18 0v7M24 29v6"/></svg><strong>ADMIN PAGE</strong><i>↗</i></a>
+    </nav>
   </main>
 
-  <footer><span>TTPD BLOCKED BILLIE</span><span>Community-built · Admin maintained</span></footer>
+  <footer class="home-footer">
+    <p>Safe place for swifties</p>
+    <strong>TTPD BLOCKED BILLIE GC</strong>
+    <div><span>created by Zeck</span><span>owned by Theo</span></div>
+  </footer>
+
+  <script>if(location.protocol==="file:"){document.getElementById("localPreviewNotice")?.classList.remove("hidden");}</script>
   <script src="app.js"></script>
 </body>
 </html>
