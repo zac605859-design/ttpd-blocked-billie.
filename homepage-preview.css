@@ -678,3 +678,36 @@ body.admin-preview .home-topbar .home-emblem img {
     box-shadow: 0 8px 20px rgba(0,0,0,.25) !important;
   }
 }
+/* HOMEPAGE — LOGO & GROUPCHAT SIZE */
+@media (max-width: 700px) {
+
+  /* Enlarge the homepage logo */
+  .home-topbar .home-emblem {
+    width: 100px !important;
+    height: 100px !important;
+    max-width: 100px !important;
+    max-height: 100px !important;
+    top: 0px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    z-index: 10 !important;
+  }
+
+  .home-topbar .home-emblem img,
+  .home-topbar .uploaded-site-logo {
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+    object-fit: contain !important;
+  }
+
+  /* Make GROUPCHAT smaller */
+  .home-intro h1 {
+    font-size: clamp(42px, 10vw, 58px) !important;
+    letter-spacing: 1px !important;
+    line-height: 1 !important;
+    margin-top: 8px !important;
+  }
+
+}
