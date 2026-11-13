@@ -302,10 +302,15 @@ async function openGalleryImagePicker(slot, targetInput = null) {
     const input = galleryPickerTargetInput || $(`galleryImageUrl${galleryPickerTargetSlot}`);
     if (input) {
       input.value = button.dataset.galleryImageUrl || "";
+      const matchSlot = input.id?.match(/^galleryImageUrl(\d+)$/);
+      if (matchSlot) {
+        const fileInput = $(`galleryDeviceFile${matchSlot[1]}`);
+        if (fileInput) fileInput.value = "";
+      }
       input.dispatchEvent(new Event("input", {bubbles:true}));
       const avatarSelection = input.id === "adminAvatar" ? $("adminAvatarSelection") : input.id === "memberAvatar" ? $("memberAvatarSelection") : null;
       if (avatarSelection) avatarSelection.textContent = "Avatar selected from Gallery.";
-      const galleryMatch = input.id?.match(/^galleryImageUrl([1-4])$/);
+      const galleryMatch = input.id?.match(/^galleryImageUrl((?:[1-9]|1[0-2]))$/);
       if (galleryMatch) { const note = $("galleryImageSelection" + galleryMatch[1]); if (note) note.textContent = "Image selected from Gallery."; }
       if (input.name === "avatar_url") {
         const note = input.closest("label")?.querySelector(".avatar-selection-note");
@@ -374,7 +379,7 @@ async function loadGalleryAdmin() {
         <div class="gallery-admin-album-heading">
           <div>
             <h4>${escapeHtml(album.title)}</h4>
-            <p class="fine-print">${albumImages.length} of 4 images</p>
+            <p class="fine-print">${albumImages.length} of 12 images</p>
           </div>
           <div class="admin-management-actions">
             <button type="button" class="button secondary small" data-action="edit-album">Edit season</button>
@@ -427,7 +432,7 @@ async function editGalleryAlbum(albumId) {
   $("galleryAlbumId").value = album.id;
   $("galleryAlbumTitle").value = album.title;
 
-  for (let slot = 1; slot <= 4; slot++) {
+  for (let slot = 1; slot <= 12; slot++) {
     const image = (images || []).find(item => item.display_order === slot);
     $(`galleryImageUrl${slot}`).value = image?.image_url || "";
     const selectionNote = $(`galleryImageSelection${slot}`);
@@ -442,6 +447,55 @@ async function editGalleryAlbum(albumId) {
 
 function escapeHtml(value) { return String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
 function safeUrl(value) { try { const u=new URL(value); return ["https:","http:"].includes(u.protocol)?u.href:""; } catch { return ""; } }
+
+const GALLERY_BUCKET = "ttpd-gallery";
+function galleryObjectPathFromUrl(value) {
+  try {
+    const url = new URL(value);
+    const marker = `/storage/v1/object/public/${GALLERY_BUCKET}/`;
+    const index = url.pathname.indexOf(marker);
+    return index >= 0 ? decodeURIComponent(url.pathname.slice(index + marker.length)) : null;
+  } catch { return null; }
+}
+async function uploadGalleryFile(file, slot) {
+  if (!file || !db) throw new Error("Supabase is not available.");
+  if (!file.type.startsWith("image/")) throw new Error("Please select an image file.");
+  if (file.size > 10 * 1024 * 1024) throw new Error("Images must be 10 MB or smaller.");
+  const extension = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
+  const path = `seasons/${crypto.randomUUID()}-${Date.now()}-${slot}.${extension}`;
+  const { error } = await db.storage.from(GALLERY_BUCKET).upload(path, file, {
+    cacheControl: "31536000", upsert: false, contentType: file.type
+  });
+  if (error) throw error;
+  const { data } = db.storage.from(GALLERY_BUCKET).getPublicUrl(path);
+  if (!data?.publicUrl) throw new Error("Could not create a public image URL.");
+  return data.publicUrl;
+}
+async function removeGalleryStorageObject(imageUrl) {
+  const path = galleryObjectPathFromUrl(imageUrl);
+  if (!path) return; // Keep externally hosted/legacy images untouched.
+  const { error } = await db.storage.from(GALLERY_BUCKET).remove([path]);
+  if (error) console.warn("Could not remove Storage object:", error.message);
+}
+document.addEventListener("change", async event => {
+  const input = event.target.closest("input[data-gallery-device-slot]");
+  if (!input || !input.files?.[0]) return;
+  const slot = Number(input.dataset.galleryDeviceSlot);
+  const note = $(`galleryImageSelection${slot}`);
+  const hidden = $(`galleryImageUrl${slot}`);
+  input.disabled = true;
+  if (note) note.textContent = "Uploading to Supabase…";
+  try {
+    const url = await uploadGalleryFile(input.files[0], slot);
+    if (hidden) hidden.value = url;
+    if (note) note.textContent = "Uploaded to Supabase Storage.";
+    input.value = "";
+  } catch (error) {
+    if (note) note.textContent = "Upload failed.";
+    message("adminMessage", error.message || "Image upload failed.", true);
+  } finally { input.disabled = false; }
+});
+
 
 $("menuToggle")?.addEventListener("click",()=>$("mainNav").classList.toggle("open"));
 document.querySelectorAll("#mainNav a").forEach(a=>a.addEventListener("click",()=>$("mainNav").classList.remove("open")));
@@ -814,7 +868,7 @@ $("galleryAlbumForm")?.addEventListener("submit", async e => {
 
   const selectedImages = [];
 
-  for (let slot = 1; slot <= 4; slot++) {
+  for (let slot = 1; slot <= 12; slot++) {
     const rawUrl = $(`galleryImageUrl${slot}`).value.trim();
     const caption = $(`galleryCaption${slot}`).value.trim();
 
@@ -880,7 +934,7 @@ $("galleryAlbumForm")?.addEventListener("submit", async e => {
  // Get the images currently saved for this season
 const { data: existingImages, error: existingError } = await db
   .from("gallery_album_images")
-  .select("id,display_order")
+  .select("id,display_order,image_url")
   .eq("album_id", savedAlbumId);
 
 if (existingError) {
@@ -897,10 +951,15 @@ const removedIds = (existingImages || [])
   .map(image => image.id);
 
 if (removedIds.length) {
+  const removedRecords = (existingImages || []).filter(image => removedIds.includes(image.id));
   const { error: deleteError } = await db
     .from("gallery_album_images")
     .delete()
     .in("id", removedIds);
+
+  if (!deleteError) {
+    for (const removed of removedRecords) await removeGalleryStorageObject(removed.image_url);
+  }
 
   if (deleteError) {
     message("adminMessage", deleteError.message, true);
@@ -925,6 +984,9 @@ for (const image of selectedImages) {
         caption: image.caption
       })
       .eq("id", existing.id);
+    if (!result.error && existing.image_url !== image.image_url) {
+      await removeGalleryStorageObject(existing.image_url);
+    }
   } else {
     result = await db
       .from("gallery_album_images")
@@ -1003,11 +1065,17 @@ $("galleryAdminManagementList")?.addEventListener("click", async e => {
 
     button.disabled = true;
 
+    const { data: imageRecord } = await db
+      .from("gallery_album_images")
+      .select("image_url")
+      .eq("id", imageId)
+      .maybeSingle();
     const { error } = await db
       .from("gallery_album_images")
       .delete()
       .eq("id", imageId);
 
+    if (!error && imageRecord?.image_url) await removeGalleryStorageObject(imageRecord.image_url);
     message("adminMessage", error?.message || "Image deleted.", !!error);
 
     if (!error) {
