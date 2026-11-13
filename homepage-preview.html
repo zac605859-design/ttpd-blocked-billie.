@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="TTPD BLOCKED BILLIE — a community hub for Swifties.">
+  <title>TTPD BLOCKED BILLIE — Home</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="homepage-preview.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="home-preview">
+  <div id="localPreviewNotice" class="local-preview-notice hidden" role="status">You are viewing a local file. For database content, open this folder through a local web server or a staging website.</div>
+  <div id="pinnedNewsTicker" class="pinned-news-ticker floating-news hidden" aria-label="Pinned community news"></div>
+
+  <header class="home-topbar">
+    <button class="news-bell" type="button" aria-label="News and updates" onclick="document.getElementById('newsPanel').classList.toggle('open')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg></button>
+    <a class="home-emblem" href="index.html" aria-label="TTPD BLOCKED BILLIE home"><img class="uploaded-site-logo" src="./site-logo.png" alt="TTPD BLOCKED BILLIE logo" onerror="this.style.display='none';this.parentElement.classList.add('logo-not-added')"><span class="logo-fallback">ADD LOGO</span></a>
+    <div class="topbar-actions">
+      <a href="admins.html">ADMINS</a>
+      <a href="members.html">MEMBERS</a>
+    </div>
+  </header>
+
+  <aside class="news-panel" id="newsPanel" aria-label="News and updates">
+    <div class="news-panel-head">
+      <div><span class="home-kicker">COMMUNITY BULLETIN</span><h2>NEWS & UPDATES</h2></div>
+      <button type="button" aria-label="Close news" onclick="document.getElementById('newsPanel').classList.remove('open')">×</button>
+    </div>
+    <div id="announcements" class="announcement-list">
+      <p class="muted">Loading announcements…</p>
+    </div>
+    <a class="text-link" href="news.html">ALL NEWS & UPDATES ↗</a>
+  </aside>
+
+  <main class="home-shell">
+    <section class="home-intro">
+      <div class="home-kicker">THE OFFICIAL COMMUNITY HUB</div>
+      <h1>GROUP<span>CHAT</span></h1>
+      <p>A safe place for Swifties.</p>
+    </section>
+
+    <section id="eventCountdownSection" class="home-up-next" aria-label="Main community countdown">
+      <div class="up-next-copy">
+        <span class="home-kicker">COMMUNITY COUNTDOWN</span>
+        <h2 id="eventCountdownTitle">Countdown not set yet</h2>
+        <p id="eventCountdownDescription">The next community event countdown will appear here once an admin sets its date and time.</p>
+        <div id="eventCountdownDate" class="up-next-date"></div>
+      </div>
+      <div class="home-countdown-wrap">
+        <span class="home-kicker">COUNTDOWN</span>
+        <div id="eventCountdownClock" class="home-countdown-clock"><div><strong>--</strong><span>DAYS</span></div><div><strong>--</strong><span>HOURS</span></div><div><strong>--</strong><span>MINS</span></div><div><strong>--</strong><span>SECS</span></div></div>
+      </div>
+    </section>
+
+
+
+
+    <nav class="home-card-grid" aria-label="Explore the website">
+      <a class="home-nav-card card-voting" href="voting.html"><span>01 / PARTICIPATE</span><svg class="nav-icon" viewBox="0 0 48 48" aria-hidden="true"><rect x="9" y="11" width="30" height="31" rx="4"/><path d="M16 7v9M32 7v9M9 20h30M17 29l5 5 10-11"/></svg><strong>VOTING</strong><i>↗</i></a>
+      <a class="home-nav-card card-winners" href="winners.html"><span>02 / THE RESULTS</span><svg class="nav-icon" viewBox="0 0 48 48" aria-hidden="true"><path d="M15 8h18v9c0 9-4 14-9 14s-9-5-9-14zM15 12H7v4c0 7 4 10 11 10M33 12h8v4c0 7-4 10-11 10M24 31v8M16 41h16"/></svg><strong>WINNERS</strong><i>↗</i></a>
+      <a class="home-nav-card card-events" href="events.html"><span>03 / WHAT'S NEXT</span><svg class="nav-icon" viewBox="0 0 48 48" aria-hidden="true"><rect x="7" y="11" width="34" height="31" rx="4"/><path d="M15 6v10M33 6v10M7 20h34M16 27h5M27 27h5M16 34h5"/></svg><strong>EVENTS</strong><i>↗</i></a>
+      <a class="home-nav-card card-gallery" href="gallery.html"><span>04 / THE ARCHIVE</span><svg class="nav-icon" viewBox="0 0 48 48" aria-hidden="true"><rect x="5" y="8" width="38" height="32" rx="4"/><circle cx="17" cy="19" r="3"/><path d="m8 35 11-10 8 7 7-8 6 6"/></svg><strong>GALLERY</strong><i>↗</i></a>
+      <a class="home-nav-card card-about" href="about.html"><span>05 / OUR STORY</span><svg class="nav-icon" viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="18"/><path d="M24 21v12M24 14h.02"/></svg><strong>ABOUT US</strong><i>↗</i></a>
+      <a class="home-nav-card card-admin" href="admin.html"><span>06 / PRIVATE ACCESS</span><svg class="nav-icon" viewBox="0 0 48 48" aria-hidden="true"><rect x="9" y="21" width="30" height="22" rx="4"/><path d="M15 21v-7a9 9 0 0 1 18 0v7M24 29v6"/></svg><strong>ADMIN PAGE</strong><i>↗</i></a>
+    </nav>
+  </main>
+
+  <footer class="home-footer">
+    <p>Safe place for swifties</p>
+    <strong>TTPD BLOCKED BILLIE GC</strong>
+    <div><span>created by Zeck</span><span>owned by Theo</span></div>
+  </footer>
+
+  <script>if(location.protocol==="file:"){document.getElementById("localPreviewNotice")?.classList.remove("hidden");}</script>
+  <script src="app.js"></script>
+</body>
+</html>

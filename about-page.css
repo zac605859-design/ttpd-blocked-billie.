@@ -1,0 +1,36 @@
+/* About Us page — matching olive / bronze community identity. */
+.about-preview { background:radial-gradient(ellipse at 50% 0%,rgba(173,150,103,.16),transparent 44%),#171914; }
+.about-shell { max-width:1050px; margin:0 auto; padding:30px 26px 80px; }
+.about-hero { text-align:center; padding:54px 0 66px; }
+.about-hero h1 { color:#e7dfcd; font:500 clamp(54px,9vw,100px)/.94 Georgia,serif; letter-spacing:5px; margin:22px 0 18px; text-shadow:0 4px 22px #0008; }
+.about-hero h1 em,.about-copy h2 em,.about-values-heading h2 em,.about-signoff h2 em { color:#b5a27a; font-style:normal; }
+.about-lead { color:#aaa38f; font-size:13px; line-height:1.8; max-width:490px; margin:0 auto; }
+.about-ornament { display:flex; align-items:center; justify-content:center; gap:14px; margin:28px auto 0; color:#c4ad7d; font:italic 17px Georgia,serif; }
+.about-ornament span { width:65px; height:1px; background:#a58d5c77; }
+.about-intro { display:grid; grid-template-columns:180px 1fr; gap:40px; border-top:1px solid #a58d5c55; border-bottom:1px solid #a58d5c55; padding:44px 0 48px; }
+.about-side-label { color:#b5a27a; font-size:9px; letter-spacing:1.8px; padding-top:7px; }
+.about-copy { max-width:680px; }
+.about-copy h2,.about-values-heading h2 { color:#e8e0cf; font:500 clamp(32px,5vw,48px)/1.12 Georgia,serif; margin:10px 0 18px; }
+.about-copy p { color:#bdb5a4; font-size:13px; line-height:1.95; margin:0 0 13px; }
+.about-values { padding:55px 0 60px; }
+.about-values-heading { text-align:center; margin-bottom:28px; }
+.about-values-heading h2 { margin-bottom:0; }
+.about-value-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
+.about-value-card { display:flex; flex-direction:column; min-height:205px; padding:20px; text-decoration:none; background:linear-gradient(145deg,#303427,#20231c 75%); border:1px solid #76694a; transition:transform .2s ease,border-color .2s ease; }
+.about-value-card:hover { transform:translateY(-3px); border-color:#c0a66e; }
+.about-value-card span { color:#b5a27a; font-size:10px; letter-spacing:1.5px; }
+.about-value-card h3 { color:#e8e0cf; font:500 25px Georgia,serif; margin:19px 0 8px; }
+.about-value-card p { color:#b8b09e; font-size:12px; line-height:1.75; margin:0 0 18px; }
+.about-value-card b { color:#c0a66e; font-size:9px; letter-spacing:1.4px; font-weight:500; margin-top:auto; }
+.about-signoff { text-align:center; padding:42px 15px 48px; border-top:1px solid #a58d5c55; }
+.about-signoff h2 { color:#e8e0cf; font:500 clamp(32px,5vw,48px)/1.15 Georgia,serif; margin:13px 0; }
+.about-signoff p { color:#b5a27a; font-size:11px; letter-spacing:1.2px; }
+@media(max-width:700px) {
+ .about-shell { padding:20px 15px 55px; }
+ .about-hero { padding:40px 0 48px; }
+ .about-hero h1 { letter-spacing:2px; }
+ .about-intro { grid-template-columns:1fr; gap:16px; padding:30px 0 34px; }
+ .about-value-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+ .about-value-card { min-height:205px; padding:15px; }
+}
+@media(max-width:430px) { .about-value-grid { grid-template-columns:1fr; } .about-value-card { min-height:170px; } }

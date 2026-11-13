@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Meet the members of TTPD BLOCKED BILLIE.">
+  <title>Members — TTPD BLOCKED BILLIE</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="homepage-preview.css">
+  <link rel="stylesheet" href="members-page.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="home-preview members-preview">
+  <header class="home-topbar">
+    <a class="back-home" href="index.html">← HOME</a>
+    <a class="home-emblem" href="index.html" aria-label="TTPD BLOCKED BILLIE home"><img src="site-logo.png" alt="TTPD BLOCKED BILLIE logo" onerror="this.style.display='none';this.parentElement.parentElement.classList.add('logo-not-added')"><span class="logo-fallback">ADD LOGO</span></a>
+    <a class="voting-top-link" href="admins.html">ADMINS ↗</a>
+  </header>
+
+  <main class="members-shell">
+    <section class="members-hero">
+      <div class="home-kicker">TTPD BLOCKED BILLIE / THE PEOPLE</div>
+      <h1>OUR <em>MEMBERS</em></h1>
+      <p>The people who make this community what it is.</p>
+      <div class="members-hero-stat"><strong id="memberCount">—</strong><span>VISIBLE MEMBERS</span></div>
+    </section>
+
+    <section class="members-directory">
+      <div class="members-section-head">
+        <div><span class="home-kicker">THE COMMUNITY DIRECTORY</span><h2>Meet the members</h2></div>
+        <span class="section-index">01 — DIRECTORY</span>
+      </div>
+      <p class="members-note">Profiles appear in the order they were created. Select “Show more” to reveal the next group of members.</p>
+      <div id="memberGrid" class="member-grid members-grid">
+        <p class="muted">Loading member profiles…</p>
+      </div>
+      <div class="members-load-row">
+        <button id="loadMoreMembers" class="members-load-button hidden" type="button">SHOW MORE</button>
+      </div>
+    </section>
+  </main>
+
+  <footer class="home-footer">
+    <p>Safe place for swifties</p>
+    <strong>TTPD BLOCKED BILLIE GC</strong>
+    <div><span>created by Zeck</span><span>owned by Theo</span></div>
+  </footer>
+  <script src="app.js"></script>
+</body>
+</html>

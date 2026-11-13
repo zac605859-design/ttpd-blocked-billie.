@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="TTPD BLOCKED BILLIE community gallery.">
+  <title>Gallery — TTPD BLOCKED BILLIE</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="homepage-preview.css">
+  <link rel="stylesheet" href="gallery-page.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="home-preview gallery-preview">
+  <header class="home-topbar">
+    <a class="back-home" href="index.html">← HOME</a>
+    <a class="home-emblem" href="index.html" aria-label="TTPD BLOCKED BILLIE home"><img src="site-logo.png" alt="TTPD BLOCKED BILLIE logo" onerror="this.style.display='none';this.parentElement.parentElement.classList.add('logo-not-added')"><span class="logo-fallback">ADD LOGO</span></a>
+    <a class="voting-top-link" href="events.html">EVENTS ↗</a>
+  </header>
+
+  <main id="gallery" class="gallery-shell">
+    <section class="gallery-hero">
+      <div class="home-kicker">TTPD BLOCKED BILLIE / THE VISUAL ARCHIVE</div>
+      <h1>THE <em>GALLERY</em></h1>
+      <p>Community memories, collected season by season.</p>
+      <div class="gallery-hero-mark">A LIVING ARCHIVE · TBB</div>
+    </section>
+
+    <section class="gallery-archive">
+      <div class="gallery-heading-row">
+        <div><span class="home-kicker">BROWSE THE COLLECTION</span><h2>Our albums</h2></div>
+        <span class="gallery-count-label">SELECT AN ALBUM TO VIEW</span>
+      </div>
+
+      <div id="galleryAlbumsGrid" class="gallery-albums-grid">
+        <p class="muted">Loading gallery albums…</p>
+      </div>
+
+      <div id="galleryAlbumViewer" class="gallery-album-viewer hidden">
+        <button id="galleryBackButton" class="gallery-back-button" type="button">← BACK TO ALBUMS</button>
+        <h3 id="galleryAlbumViewerTitle"></h3>
+        <div id="galleryAlbumViewerContent" class="gallery-album-images"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="home-footer">
+    <p>Safe place for swifties</p>
+    <strong>TTPD BLOCKED BILLIE GC</strong>
+    <div><span>created by Zeck</span><span>owned by Theo</span></div>
+  </footer>
+  <script src="app.js"></script>
+</body>
+</html>

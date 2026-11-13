@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Community events and event results.">
+  <title>Events — TTPD BLOCKED BILLIE</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="homepage-preview.css">
+  <link rel="stylesheet" href="events-page.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="home-preview events-preview">
+  <header class="home-topbar">
+    <a class="back-home" href="index.html">← HOME</a>
+    <a class="home-emblem" href="index.html" aria-label="TTPD BLOCKED BILLIE home"><img src="site-logo.png" alt="TTPD BLOCKED BILLIE logo" onerror="this.style.display='none';this.parentElement.parentElement.classList.add('logo-not-added')"><span class="logo-fallback">ADD LOGO</span></a>
+    <a class="voting-top-link" href="winners.html">WINNERS ↗</a>
+  </header>
+
+  <main class="events-shell">
+    <section class="events-hero">
+      <div class="home-kicker">TTPD BLOCKED BILLIE / COMMUNITY CALENDAR</div>
+      <h1>THE <em>EVENTS</em></h1>
+      <p>Gatherings, community moments and the results worth remembering.</p>
+      <div class="events-hero-rule"><span></span><small>OUR COMMUNITY, IN CHRONOLOGICAL ORDER</small><span></span></div>
+    </section>
+
+    <section class="events-archive-section">
+      <div class="events-section-head">
+        <div><span class="home-kicker">THE COMMUNITY ARCHIVE</span><h2>Events & results</h2></div>
+        <span class="section-index">01 — ARCHIVE</span>
+      </div>
+      <p class="events-instruction">Select an event to open its details. Only one event is expanded at a time.</p>
+      <div id="eventsGrid" class="event-grid events-archive-list">
+        <p class="muted">Loading published events…</p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="home-footer">
+    <p>Safe place for swifties</p>
+    <strong>TTPD BLOCKED BILLIE GC</strong>
+    <div><span>created by Zeck</span><span>owned by Theo</span></div>
+  </footer>
+  <script src="app.js"></script>
+</body>
+</html>

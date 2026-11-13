@@ -1,0 +1,12 @@
+/* Shared member/admin directory layout */
+.directory-page,.members-shell,.admins-shell{max-width:1100px;margin:0 auto;padding:34px 24px 70px}
+.directory-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
+.member-card{padding:18px;border:1px solid #76694a;background:linear-gradient(145deg,#303427,#20231c);color:#e8e0cf}
+.member-top{display:flex;align-items:center;gap:12px}
+.member-top h3{margin:0;font:20px Georgia,serif}
+.member-top p,.member-card p,.handle{color:#aaa38f;font-size:12px;line-height:1.6}
+.avatar{width:54px;height:54px;flex:0 0 54px;border-radius:50%;object-fit:cover;border:1px solid #a58d5c;background:#34382a;display:grid;place-items:center}
+.directory-actions{display:flex;justify-content:center;margin:22px 0}
+@media(max-width:600px){.directory-page,.members-shell,.admins-shell{padding:24px 15px 55px}.directory-grid{grid-template-columns:1fr}}
+
+/* Admin directory */

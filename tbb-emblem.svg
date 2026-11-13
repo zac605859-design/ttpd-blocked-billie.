@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180" role="img" aria-labelledby="title">
+<title id="title">TTPD BLOCKED BILLIE crest</title>
+<defs>
+ <radialGradient id="g"><stop offset="0" stop-color="#4b4b3c"/><stop offset=".72" stop-color="#24271f"/><stop offset="1" stop-color="#11130f"/></radialGradient>
+ <linearGradient id="m" x2="0" y2="1"><stop stop-color="#eee5d3"/><stop offset=".48" stop-color="#b8a47b"/><stop offset="1" stop-color="#746343"/></linearGradient>
+</defs>
+<circle cx="90" cy="90" r="85" fill="url(#g)" stroke="url(#m)" stroke-width="3"/>
+<circle cx="90" cy="90" r="75" fill="none" stroke="#b9a77f" stroke-width="1.5"/>
+<path d="M49 117 Q26 90 43 56 Q29 76 38 103 Q44 122 59 132 M131 117 Q154 90 137 56 Q151 76 142 103 Q136 122 121 132" fill="none" stroke="url(#m)" stroke-width="4" stroke-linecap="round"/>
+<path d="M64 48 L72 30 L89 43 L106 30 L116 49 L110 57 L70 57 Z" fill="url(#m)" stroke="#5f5137" stroke-width="1.5"/>
+<path d="M72 60 H108 L104 68 H76 Z" fill="#b9a77f"/>
+<text x="90" y="96" text-anchor="middle" font-family="Georgia,serif" font-size="39" font-weight="bold" fill="url(#m)" stroke="#302a1e" stroke-width=".8">TBB</text>
+<path d="M55 108 H125" stroke="#b9a77f" stroke-width="1"/>
+<text x="90" y="122" text-anchor="middle" font-family="Georgia,serif" font-size="9" letter-spacing="1.4" fill="#e8e0cf">COMMUNITY</text>
+<path d="M70 137 Q90 145 110 137" fill="none" stroke="#b9a77f" stroke-width="1.5"/>
+</svg>

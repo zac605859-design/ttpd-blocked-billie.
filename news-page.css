@@ -1,0 +1,34 @@
+/* News & Updates page. */
+.news-preview { background:radial-gradient(ellipse at 50% 0%,rgba(173,150,103,.16),transparent 44%),#171914; }
+.news-shell { max-width:1000px; margin:0 auto; padding:38px 26px 80px; }
+.news-hero { text-align:center; padding:36px 0 48px; }
+.news-hero h1 { color:#e7dfcd; font:500 clamp(42px,7vw,76px)/1.05 Georgia,serif; letter-spacing:4px; margin:16px 0 12px; text-shadow:0 4px 22px #0008; }
+.news-hero h1 em { color:#b5a27a; font-style:normal; }
+.news-hero p { color:#aaa38f; font-size:13px; line-height:1.7; max-width:590px; margin:0 auto; }
+.news-board { margin-bottom:50px; }
+.news-board-heading { display:flex; justify-content:space-between; align-items:end; gap:20px; border-bottom:1px solid #a58d5c55; padding-bottom:15px; margin-bottom:18px; }
+.news-board-heading h2 { color:#e8e0cf; font:500 34px Georgia,serif; margin:8px 0 0; }
+.news-index { color:#b5a27a; font-size:9px; letter-spacing:1.8px; }
+.news-preview .news-list { display:grid; gap:13px; }
+.news-preview .announcement {
+  position:relative; padding:22px 24px 23px 27px; margin:0;
+  background:linear-gradient(145deg,#303427,#20231c 75%);
+  border:1px solid #76694a; border-left:3px solid #a58d5c;
+  box-shadow:0 8px 20px #0002;
+}
+.news-preview .announcement h3 { color:#e8e0cf; font:500 23px/1.25 Georgia,serif; margin:10px 0 9px; }
+.news-preview .announcement time { color:#b5a27a; font-size:10px; letter-spacing:1.2px; text-transform:uppercase; }
+.news-preview .announcement p { color:#c1b9a7; font-size:13px; line-height:1.8; margin:0; white-space:pre-line; }
+.news-preview .pinned-tag { display:inline-block; color:#1d2118; background:#b9a477; padding:4px 8px; font-size:9px; letter-spacing:1.4px; }
+.news-preview .pinned-news-ticker { overflow:hidden; margin:0 0 17px; border:1px solid #9e885b77; background:#b49b6820; color:#dfd0aa; }
+.news-preview .pinned-news-track { display:flex; width:max-content; gap:48px; padding:11px 16px; animation:newsTicker 28s linear infinite; }
+.news-preview .pinned-news-track span { font-size:10px; letter-spacing:1.5px; text-transform:uppercase; white-space:nowrap; }
+@keyframes newsTicker { from { transform:translateX(0); } to { transform:translateX(-50%); } }
+@media(max-width:650px) {
+ .news-shell { padding:22px 15px 55px; }
+ .news-hero { padding:28px 0 38px; }
+ .news-hero h1 { letter-spacing:2px; }
+ .news-board-heading { align-items:start; flex-direction:column; gap:8px; }
+ .news-preview .announcement { padding:18px; }
+ .news-preview .announcement h3 { font-size:20px; }
+}

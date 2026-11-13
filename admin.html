@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Private administration dashboard for TTPD BLOCKED BILLIE.">
+  <title>Admin Page — TTPD BLOCKED BILLIE</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="homepage-preview.css">
+  <link rel="stylesheet" href="admin-page.css">
+  <link rel="stylesheet" href="admin-navigation.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="home-preview admin-preview">
+  <header class="home-topbar">
+    <a class="back-home" href="index.html">← HOME</a>
+    <a class="home-emblem" href="index.html" aria-label="TTPD BLOCKED BILLIE home"><img src="site-logo.png" alt="TTPD BLOCKED BILLIE logo" onerror="this.style.display='none';this.parentElement.parentElement.classList.add('logo-not-added')"><span class="logo-fallback">ADD LOGO</span></a>
+    <a class="voting-top-link" href="news.html">NEWS ↗</a>
+  </header>
+  <main class="admin-page-shell">
+    <div class="admin-page-intro">
+      <div class="home-kicker">TTPD BLOCKED BILLIE / RESTRICTED ACCESS</div>
+      <h1>ADMIN <em>CONTROL</em></h1>
+      <p>Manage the community, content, voting and events from one place.</p>
+    </div>
+<section class="section admin-section" id="admin">
+      <div class="section-heading"><div><div class="eyebrow">PRIVATE AREA</div><h2>Admin dashboard</h2></div><span class="section-aside">Admin access only</span></div>
+      <div id="adminLogin" class="admin-panel">
+        <p>Sign in with the admin account configured in Supabase.</p>
+        <form id="loginForm" class="login-form"><input id="adminEmail" type="email" placeholder="Admin email" required><input id="adminPassword" type="password" placeholder="Password" required><button class="button primary" type="submit">Sign in</button></form>
+        <p id="loginMessage" class="form-message" role="status"></p>
+      </div>
+      <div id="adminPanel" class="admin-panel hidden">
+        <div class="admin-top"><p>You are signed in as an administrator.</p><button class="button secondary small" id="signOut">Sign out</button></div>
+        <div class="admin-grid">
+          <div class="admin-card"><h3>Voting controls</h3><label class="switch-line"><input type="checkbox" id="votingToggle"> Voting is open</label><button class="button secondary small" id="refreshData">Refresh public site</button></div>
+          <div class="admin-card"><h3>Add a category</h3><form id="categoryForm"><input id="newCategory" placeholder="Category name" required><button class="button secondary small">Add category</button></form></div>
+          <div class="admin-card"><h3>Add a nominee</h3><form id="nomineeForm"><select id="nomineeCategory" required></select><input id="newNominee" placeholder="Nominee name / @handle" required><button class="button secondary small">Add nominee</button></form></div><div class="admin-card admin-wide">
+  <h3>Manage voting categories</h3>
+  <div id="categoryManagementList" class="admin-management-list">
+    <p class="muted">Loading categories…</p>
+  </div>
+</div>
+
+<div class="admin-card admin-wide">
+  <h3>Manage nominees</h3>
+  <div id="nomineeManagementList" class="admin-management-list">
+    <p class="muted">Loading nominees…</p>
+  </div>
+</div>
+          <div class="admin-card"><h3>Add an admin</h3><form id="adminForm"><input id="adminName" placeholder="Display name" required><input id="adminHandle" placeholder="@handle"><input id="adminBio" placeholder="Short bio"><input id="adminAvatar" type="hidden" value=""><button type="button" class="button secondary small directory-avatar-picker" data-avatar-input="adminAvatar">Choose avatar from Gallery</button><p class="fine-print" id="adminAvatarSelection">No avatar selected (optional).</p><button class="button secondary small">Add admin</button></form></div>
+          <div class="admin-card member-management-card"><h3>Manage admins</h3><div id="adminManagementList" class="member-management-list"><p class="muted">Sign in to load admins.</p></div></div>
+          <div class="admin-card"><h3>Add a member</h3><form id="memberForm"><input id="memberName" placeholder="Display name" required><input id="memberHandle" placeholder="@handle"><input id="memberBio" placeholder="Short bio"><input id="memberAvatar" type="hidden" value=""><button type="button" class="button secondary small directory-avatar-picker" data-avatar-input="memberAvatar">Choose avatar from Gallery</button><p class="fine-print" id="memberAvatarSelection">No avatar selected (optional).</p><button class="button secondary small">Add member</button></form></div>
+          <div class="admin-card member-management-card"><h3>Manage members</h3><div id="memberManagementList" class="member-management-list"><p class="muted">Sign in to load members.</p></div></div>
+          <div class="admin-card admin-wide"><h3>Manage announcements</h3><div id="announcementManagementList" class="admin-management-list"></div></div>
+          <div class="admin-card"><h3>Publish an announcement</h3><form id="announcementForm"><input id="announcementTitle" placeholder="Announcement title" required><textarea id="announcementBody" placeholder="Write the announcement…" required></textarea><label class="switch-line"><input type="checkbox" id="announcementPinned"> Pin this announcement on the homepage</label><button class="button secondary small">Publish</button></form></div>
+          <div class="admin-card admin-wide">
+  <h3>Manage Gallery Seasons</h3>
+
+  <form id="galleryAlbumForm">
+    <input type="hidden" id="galleryAlbumId">
+
+    <input
+      id="galleryAlbumTitle"
+      placeholder="Season name (e.g. Season 1)"
+      required
+    >
+
+    <p class="fine-print">
+      Add between 1 and 4 images. Leave unused image fields empty.
+    </p>
+
+    <div class="gallery-admin-image-fields">
+      <label>Image 1
+        <input id="galleryImageUrl1" type="hidden" value=""><div class="gallery-image-input-row"><button type="button" class="button secondary small gallery-pick-button" data-gallery-slot="1">Choose image 1 from Gallery</button><span class="fine-print" id="galleryImageSelection1">No image selected</span></div>
+      </label>
+      <input id="galleryCaption1" placeholder="Image 1 caption (optional)">
+
+      <label>Image 2
+        <input id="galleryImageUrl2" type="hidden" value=""><div class="gallery-image-input-row"><button type="button" class="button secondary small gallery-pick-button" data-gallery-slot="2">Choose image 2 from Gallery</button><span class="fine-print" id="galleryImageSelection2">No image selected</span></div>
+      </label>
+      <input id="galleryCaption2" placeholder="Image 2 caption (optional)">
+
+      <label>Image 3
+        <input id="galleryImageUrl3" type="hidden" value=""><div class="gallery-image-input-row"><button type="button" class="button secondary small gallery-pick-button" data-gallery-slot="3">Choose image 3 from Gallery</button><span class="fine-print" id="galleryImageSelection3">No image selected</span></div>
+      </label>
+      <input id="galleryCaption3" placeholder="Image 3 caption (optional)">
+
+      <label>Image 4
+        <input id="galleryImageUrl4" type="hidden" value=""><div class="gallery-image-input-row"><button type="button" class="button secondary small gallery-pick-button" data-gallery-slot="4">Choose image 4 from Gallery</button><span class="fine-print" id="galleryImageSelection4">No image selected</span></div>
+      </label>
+      <input id="galleryCaption4" placeholder="Image 4 caption (optional)">
+    </div>
+
+    <button type="submit" class="button secondary small" id="galleryAlbumSaveButton">
+      Create season
+    </button>
+
+    <button type="button" class="button secondary small hidden" id="galleryAlbumCancelButton">
+      Cancel editing
+    </button>
+  </form>
+
+  <div class="divider"></div>
+
+  <h3>Existing Gallery Seasons</h3>
+  <div id="galleryAdminManagementList">
+    <p class="muted">Sign in to manage seasons.</p>
+  </div>
+</div>
+          <div class="admin-card admin-wide"><h3>Manage seasons and winners</h3><div id="winnerManagementList" class="admin-management-list"></div><p class="fine-print">Select a draft or published season, then add each category and its winner. You can edit or delete entries below.</p><form id="winnerEntryForm"><select id="winnerEntrySeason" required></select><input id="winnerEntryCategory" placeholder="Category name" required><input id="winnerEntryName" placeholder="Winner name / @handle" required><button class="button secondary small">Add winner</button></form></div>
+          <div class="admin-card admin-wide"><h3>Homepage event countdown</h3><form id="eventForm"><input id="eventTitleInput" placeholder="Event title" required><textarea id="eventDescriptionInput" placeholder="Event description"></textarea><label>Event date and time<input id="eventDateTimeInput" type="datetime-local" required></label><button class="button secondary small">Save countdown</button></form><div id="eventManagement"></div></div><div class="admin-card admin-wide">
+  <h3>Create a community event</h3>
+  <form id="communityEventForm">
+    <input id="communityEventTitle" placeholder="Event title" required>
+    <textarea id="communityEventDescription" placeholder="Event description"></textarea>
+    <label>
+      Event date
+      <input id="communityEventDate" type="date">
+    </label>
+    <button class="button secondary small" type="submit">Create event</button>
+  </form>
+  <div id="eventManagementList" class="admin-management-list"></div>
+</div>
+
+<div class="admin-card admin-wide">
+  <h3>Add event winners</h3>
+  <form id="eventWinnerForm">
+    <select id="eventWinnerEvent" required>
+      <option value="">Select event</option>
+    </select>
+    <input id="eventWinnerCategory" placeholder="Category (e.g. Best Album)" required>
+    <input id="eventWinnerName" placeholder="Winner name / @handle" required>
+    <button class="button secondary small" type="submit">Add winner</button>
+  </form>
+  <div id="eventWinnerManagementList" class="admin-management-list"></div>
+</div>
+          <div class="admin-card"><h3>Publish award edition</h3><form id="editionForm"><input id="editionTitle" placeholder="Season title (e.g. Season 4 Awards)" required><select id="editionMonth" required><option value="">Month</option><option value="1">January</option><option value="2">February</option><option value="3">March</option><option value="4">April</option><option value="5">May</option><option value="6">June</option><option value="7">July</option><option value="8">August</option><option value="9">September</option><option value="10">October</option><option value="11">November</option><option value="12">December</option></select><input id="editionYear" type="number" min="2000" max="2100" placeholder="Year" required><button class="button secondary small">Create draft season</button></form><p class="fine-print">Create the season here, add its category winners in Manage seasons and winners, then use Publish on that season. Draft seasons stay hidden from the public Winners page.</p></div>
+        </div>
+        <p id="adminMessage" class="form-message" role="status"></p>
+      </div>
+    </section>
+  </main>
+  <footer class="home-footer">
+    <p>Safe place for swifties</p>
+    <strong>TTPD BLOCKED BILLIE GC</strong>
+    <div><span>created by Zeck</span><span>owned by Theo</span></div>
+  </footer>
+  <script src="app.js?v=20261114-publish-destination"></script>
+  <script src="admin-navigation.js?v=20261114-publish-destination"></script>
+
+  <div id="galleryImagePicker" class="gallery-image-picker hidden" role="dialog" aria-modal="true" aria-labelledby="galleryImagePickerTitle">
+    <div class="gallery-image-picker-backdrop" data-gallery-picker-close></div>
+    <section class="gallery-image-picker-panel">
+      <div class="gallery-image-picker-heading"><h3 id="galleryImagePickerTitle">Select an image from Gallery</h3><button type="button" class="gallery-picker-close" data-gallery-picker-close aria-label="Close">×</button></div>
+      <p class="fine-print">Choose an image already saved in one of your Gallery seasons.</p>
+      <div id="galleryImagePickerGrid" class="gallery-image-picker-grid"><p class="muted">Loading gallery images…</p></div>
+    </section>
+  </div>
+\n</body>
+</html>

@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="News and updates from TTPD BLOCKED BILLIE.">
+  <title>News & Updates — TTPD BLOCKED BILLIE</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="homepage-preview.css">
+  <link rel="stylesheet" href="news-page.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="home-preview news-preview">
+  <header class="home-topbar">
+    <a class="back-home" href="index.html">← HOME</a>
+    <a class="home-emblem" href="index.html" aria-label="TTPD BLOCKED BILLIE home"><img src="site-logo.png" alt="TTPD BLOCKED BILLIE logo" onerror="this.style.display='none';this.parentElement.parentElement.classList.add('logo-not-added')"><span class="logo-fallback">ADD LOGO</span></a>
+    <a class="voting-top-link" href="about.html">ABOUT ↗</a>
+  </header>
+
+  <main class="news-shell">
+    <section class="news-hero">
+      <div class="home-kicker">TTPD BLOCKED BILLIE / COMMUNITY BULLETIN</div>
+      <h1>NEWS <em>&</em> UPDATES</h1>
+      <p>Announcements, important notices and the latest from the community.</p>
+    </section>
+
+    <section class="news-board">
+      <div class="news-board-heading">
+        <div><span class="home-kicker">THE LATEST</span><h2>From the groupchat</h2></div>
+        <span class="news-index">01 — BULLETIN</span>
+      </div>
+      <div id="pinnedNewsTicker" class="pinned-news-ticker hidden" aria-label="Pinned announcements"></div>
+      <div id="announcements" class="news-list">
+        <p class="muted">Loading announcements…</p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="home-footer">
+    <p>Safe place for swifties</p>
+    <strong>TTPD BLOCKED BILLIE GC</strong>
+    <div><span>created by Zeck</span><span>owned by Theo</span></div>
+  </footer>
+  <script src="app.js"></script>
+</body>
+</html>
