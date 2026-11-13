@@ -275,51 +275,117 @@ document.addEventListener("click", event => {
   if (modal) modal.classList.add("hidden");
   galleryPickerTargetInput = null;
 });
+async function listBucketImages(folderPath = "", depth = 0, output = []) {
+  if (!db) throw new Error("Supabase is not available.");
+  if (depth > 3) return output;
+
+  const bucket = db.storage.from(GALLERY_BUCKET);
+  let offset = 0;
+  const pageSize = 1000;
+
+  while (true) {
+    const { data, error } = await bucket.list(folderPath, {
+      limit: pageSize,
+      offset,
+      sortBy: { column: "created_at", order: "desc" }
+    });
+    if (error) throw error;
+    const entries = data || [];
+
+    for (const entry of entries) {
+      const fullPath = folderPath ? `${folderPath}/${entry.name}` : entry.name;
+      const isFolder = !entry.id && !entry.metadata;
+      if (isFolder) {
+        await listBucketImages(fullPath, depth + 1, output);
+        continue;
+      }
+
+      const mime = entry.metadata?.mimetype || entry.metadata?.contentType || "";
+      const extensionLooksLikeImage = /\.(avif|gif|jpe?g|png|webp|bmp|svg)$/i.test(entry.name);
+      if (!mime.startsWith("image/") && !extensionLooksLikeImage) continue;
+
+      const { data: publicData } = bucket.getPublicUrl(fullPath);
+      if (publicData?.publicUrl) {
+        output.push({
+          name: entry.name,
+          path: fullPath,
+          url: publicData.publicUrl,
+          created_at: entry.created_at || entry.updated_at || ""
+        });
+      }
+    }
+
+    if (entries.length < pageSize) break;
+    offset += pageSize;
+  }
+  return output;
+}
+
 async function openGalleryImagePicker(slot, targetInput = null) {
   galleryPickerTargetSlot = Number(slot || 0);
   galleryPickerTargetInput = targetInput;
   const modal = $("galleryImagePicker");
   const grid = $("galleryImagePickerGrid");
   if (!modal || !grid || !db) return;
+
   modal.classList.remove("hidden");
-  grid.innerHTML = '<p class="muted">Loading saved gallery images…</p>';
-  const {data: albums, error: albumError} = await db.from("gallery_albums").select("id,title").order("display_order");
-  if (albumError) { grid.innerHTML = `<p class="muted">${escapeHtml(albumError.message)}</p>`; return; }
-  if (!albums?.length) { grid.innerHTML = '<p class="muted">There are no saved gallery images yet.</p>'; return; }
-  const {data: images, error} = await db.from("gallery_album_images")
-    .select("id,album_id,image_url,caption,display_order")
-    .in("album_id", albums.map(a=>a.id)).order("display_order");
-  if (error) { grid.innerHTML = `<p class="muted">${escapeHtml(error.message)}</p>`; return; }
-  if (!images?.length) { grid.innerHTML = '<p class="muted">There are no saved gallery images yet.</p>'; return; }
-  grid.innerHTML = images.map(image=>{
-    const album = albums.find(a=>a.id===image.album_id);
-    return `<button type="button" class="gallery-picker-item" data-gallery-image-url="${escapeHtml(image.image_url)}">
-      <img src="${escapeHtml(image.image_url)}" alt="${escapeHtml(image.caption || album?.title || "Gallery image")}">
-      <span>${escapeHtml(image.caption || album?.title || "Gallery image")}</span>
-    </button>`;
-  }).join("");
-  grid.querySelectorAll("[data-gallery-image-url]").forEach(button=>button.addEventListener("click",()=>{
-    const input = galleryPickerTargetInput || $(`galleryImageUrl${galleryPickerTargetSlot}`);
-    if (input) {
-      input.value = button.dataset.galleryImageUrl || "";
-      const matchSlot = input.id?.match(/^galleryImageUrl(\d+)$/);
-      if (matchSlot) {
-        const fileInput = $(`galleryDeviceFile${matchSlot[1]}`);
-        if (fileInput) fileInput.value = "";
-      }
-      input.dispatchEvent(new Event("input", {bubbles:true}));
-      const avatarSelection = input.id === "adminAvatar" ? $("adminAvatarSelection") : input.id === "memberAvatar" ? $("memberAvatarSelection") : null;
-      if (avatarSelection) avatarSelection.textContent = "Avatar selected from Gallery.";
-      const galleryMatch = input.id?.match(/^galleryImageUrl((?:[1-9]|1[0-2]))$/);
-      if (galleryMatch) { const note = $("galleryImageSelection" + galleryMatch[1]); if (note) note.textContent = "Image selected from Gallery."; }
-      if (input.name === "avatar_url") {
-        const note = input.closest("label")?.querySelector(".avatar-selection-note");
-        if (note) note.textContent = "Avatar selected from Gallery.";
-      }
+  grid.innerHTML = '<p class="muted">Loading images from Supabase Storage…</p>';
+
+  try {
+    const images = await listBucketImages();
+    images.sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
+
+    if (!images.length) {
+      grid.innerHTML = '<p class="muted">No image files found in the ttpd-gallery bucket.</p>';
+      return;
     }
-    modal.classList.add("hidden");
-    galleryPickerTargetInput = null;
-  }));
+
+    grid.innerHTML = images.map(image => `
+      <button type="button" class="gallery-picker-item"
+        data-gallery-image-url="${escapeHtml(image.url)}"
+        title="${escapeHtml(image.path)}">
+        <img src="${escapeHtml(image.url)}" alt="${escapeHtml(image.name)}" loading="lazy">
+        <span>${escapeHtml(image.name)}</span>
+      </button>
+    `).join("");
+
+    grid.querySelectorAll("[data-gallery-image-url]").forEach(button => {
+      button.addEventListener("click", () => {
+        const input = galleryPickerTargetInput || $(`galleryImageUrl${galleryPickerTargetSlot}`);
+        if (input) {
+          input.value = button.dataset.galleryImageUrl || "";
+          const matchSlot = input.id?.match(/^galleryImageUrl(\d+)$/);
+          if (matchSlot) {
+            const fileInput = $(`galleryDeviceFile${matchSlot[1]}`);
+            if (fileInput) fileInput.value = "";
+          }
+          input.dispatchEvent(new Event("input", { bubbles: true }));
+
+          const avatarSelection = input.id === "adminAvatar"
+            ? $("adminAvatarSelection")
+            : input.id === "memberAvatar" ? $("memberAvatarSelection") : null;
+          if (avatarSelection) avatarSelection.textContent = "Selected from Supabase Storage.";
+
+          const galleryMatch = input.id?.match(/^galleryImageUrl((?:[1-9]|1[0-2]))$/);
+          if (galleryMatch) {
+            const note = $("galleryImageSelection" + galleryMatch[1]);
+            if (note) note.textContent = "Selected from Supabase Storage.";
+          }
+
+          if (input.name === "avatar_url") {
+            const note = input.closest("label")?.querySelector(".avatar-selection-note");
+            if (note) note.textContent = "Selected from Supabase Storage.";
+          }
+        }
+
+        modal.classList.add("hidden");
+        galleryPickerTargetInput = null;
+      });
+    });
+  } catch (error) {
+    console.error("Supabase Storage image picker failed:", error);
+    grid.innerHTML = `<p class="muted">Could not load bucket images: ${escapeHtml(error.message || "Storage request failed.")}</p>`;
+  }
 }
 document.addEventListener("click", event => {
   const button = event.target.closest(".directory-avatar-picker");
