@@ -103,7 +103,7 @@ const directoryState = {
   admins: { rows: [], visible: 5, gridId: "adminGrid", moreId: "loadMoreAdmins", managementId: "adminManagementList", table: "admins", label: "admin" },
   members: { rows: [], visible: 5, gridId: "memberGrid", moreId: "loadMoreMembers", managementId: "memberManagementList", table: "members", label: "member" }
 };
-const DIRECTORY_PAGE_SIZE = 5;
+const DIRECTORY_PAGE_SIZE = 999999;
 function renderDirectory(key) {
   const state=directoryState[key], grid=$(state.gridId); if(!grid)return;
   const shown=state.rows.slice(0,state.visible);
@@ -867,8 +867,6 @@ $("loginForm")?.addEventListener("submit", async e => {
 $("signOut")?.addEventListener("click",async()=>{await db.auth.signOut();await requireAdmin();});
 $("votingToggle")?.addEventListener("change",async e=>{const {error}=await db.from("site_settings").upsert({key:"voting_open",value:e.target.checked},{onConflict:"key"});message("adminMessage",error?.message||"Voting setting updated.",!!error);await loadVoting();});
 $("refreshData")?.addEventListener("click",loadPublic);
-$("loadMoreAdmins")?.addEventListener("click",()=>{directoryState.admins.visible+=DIRECTORY_PAGE_SIZE;renderDirectory("admins");});
-$("loadMoreMembers")?.addEventListener("click",()=>{directoryState.members.visible+=DIRECTORY_PAGE_SIZE;renderDirectory("members");});
 $("categoryForm")?.addEventListener("submit", async e => {
   e.preventDefault();
 
